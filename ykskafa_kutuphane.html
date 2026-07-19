@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Kütüphane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--surface:#0e0e1a;--surface2:#13131f;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0ff;--muted:#8b89a8;--accent:#c8f53c;--accent2:#7c6af7;--accent3:#f53c7a;--success:#3cf58a;--warn:#f5a23c;--nav-bg:rgba(8,8,16,.9);--overlay-bg:rgba(8,8,16,.85);--syne:'Syne',sans-serif;--dm:'DM Sans',sans-serif}
+[data-theme="light"]{--bg:#f4f3fa;--surface:#ffffff;--surface2:#f0eefa;--border:rgba(20,16,40,0.08);--border2:rgba(20,16,40,0.14);--text:#161426;--muted:#6b6885;--nav-bg:rgba(255,255,255,.85);--overlay-bg:rgba(244,243,250,.9)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--dm);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s ease,color .25s ease}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,106,247,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(124,106,247,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+
+.topnav{position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px}
+.nav-left{display:flex;align-items:center;gap:20px}
+.logo{font-family:var(--syne);font-size:18px;font-weight:800;letter-spacing:-1px;text-decoration:none;color:var(--text)}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-links a{font-size:13px;color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:2px;transition:all .2s}
+.nav-links a:hover{color:var(--text);background:rgba(124,106,247,.08)}
+.nav-links a.active{color:var(--accent2);background:rgba(124,106,247,.1)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.theme-toggle{width:34px;height:34px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent2)}
+.nav-streak{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:5px 12px}
+.nav-streak span{color:var(--accent);font-family:var(--syne);font-weight:700}
+
+.main{position:relative;z-index:1;max-width:1180px;margin:0 auto;width:100%;padding:32px 28px}
+.page-title{font-family:var(--syne);font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.page-desc{font-size:14px;color:var(--muted);font-weight:300;margin-bottom:24px}
+
+/* filter bar */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:22px;background:var(--surface);border:1px solid var(--border);padding:14px 18px}
+.search-input{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--dm);font-size:13px;padding:9px 14px;outline:none}
+.search-input:focus{border-color:var(--accent2)}
+.filter-select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--dm);font-size:13px;padding:9px 12px;outline:none}
+.type-tabs{display:flex;gap:6px}
+.type-tab{padding:9px 14px;font-size:12px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap}
+.type-tab.active{border-color:var(--accent2);color:var(--accent2);background:rgba(124,106,247,.07)}
+.fav-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;padding:9px 12px;border:1px solid var(--border2)}
+.fav-toggle.active{color:var(--warn);border-color:rgba(245,162,60,.4);background:rgba(245,162,60,.06)}
+
+/* grid */
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.lib-card{background:var(--surface);border:1px solid var(--border);padding:20px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:10px;position:relative}
+.lib-card:hover{border-color:rgba(124,106,247,.35);transform:translateY(-2px)}
+.lib-top{display:flex;align-items:center;gap:8px}
+.lib-type-icon{font-size:16px}
+.lib-ders{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border:1px solid;flex-shrink:0}
+.lib-offline{margin-left:auto;font-size:10px;color:var(--success);display:flex;align-items:center;gap:4px}
+.lib-konu{font-size:15px;font-weight:400;line-height:1.4}
+.lib-meta{font-size:11px;color:var(--muted);display:flex;gap:10px}
+.lib-tags{display:flex;gap:5px;flex-wrap:wrap}
+.lib-tag{font-size:10px;padding:2px 8px;border:1px solid var(--border2);color:var(--muted)}
+.fav-star{position:absolute;top:16px;right:16px;background:transparent;border:none;font-size:16px;cursor:pointer;color:var(--muted);transition:all .2s}
+.fav-star.on{color:var(--warn)}
+.fav-star:hover{transform:scale(1.15)}
+.lib-del{position:absolute;bottom:16px;right:16px;background:transparent;border:none;font-size:11px;color:var(--muted);cursor:pointer;opacity:0;transition:all .2s}
+.lib-card:hover .lib-del{opacity:1}
+.lib-del:hover{color:var(--accent3)}
+
+.empty-state{text-align:center;padding:80px 20px;color:var(--muted)}
+.empty-icon{font-size:44px;margin-bottom:16px;opacity:.6}
+.empty-title{font-family:var(--syne);font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px}
+.empty-desc{font-size:13px;font-weight:300;margin-bottom:20px}
+.empty-cta{display:inline-flex;gap:10px}
+.empty-btn{background:var(--accent2);color:#fff;font-size:13px;padding:10px 20px;text-decoration:none;transition:all .2s}
+.empty-btn:hover{opacity:.9}
+.empty-btn.outline{background:transparent;border:1px solid var(--border2);color:var(--muted)}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:var(--overlay-bg);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--surface);border:1px solid var(--border);max-width:560px;width:100%;max-height:80vh;overflow-y:auto;padding:0;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:var(--syne);font-size:16px;font-weight:800}
+.modal-close{background:transparent;border:1px solid var(--border2);color:var(--muted);width:30px;height:30px;cursor:pointer;font-size:14px}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:12px}
+.modal-step{font-size:13px;line-height:1.7;font-weight:300;padding:12px 14px;background:var(--surface2);border-left:2px solid var(--accent2)}
+.modal-step b{color:var(--accent2);font-weight:500}
+.modal-card{font-size:13px;line-height:1.6;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.modal-card .q{color:var(--text)}
+.modal-card .a{color:var(--accent);font-size:12px}
+
+@media(max-width:600px){.main{padding:20px 16px}.nav-links{display:none}.lib-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-left">
+    <a href="web%20sayfa/index.html" class="logo">YKS<span>KAFA</span></a>
+    <div class="nav-links">
+      <a href="ykskafa_dashboard.html">Dashboard</a>
+      <a href="ykskafa_quiz.html">Soru Çöz</a>
+      <a href="ykskafa_solve.html">Fotoğrafla Çöz</a>
+      <a href="ykskafa_ogren.html">Öğren</a>
+      <a href="ykskafa_kutuphane.html" class="active">Kütüphane</a>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-streak">🔥 Seri: <span>7</span> gün</div>
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Tema değiştir">🌙</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-title">📚 Kütüphanem</div>
+  <div class="page-desc">Kaydettiğin tüm çözümler ve öğrenme setleri burada — çevrimdışı da erişebilirsin.</div>
+
+  <div class="filter-bar">
+    <input type="text" class="search-input" id="search" placeholder="Konu veya ders ara..." oninput="render()">
+    <select class="filter-select" id="filter-ders" onchange="render()">
+      <option value="">Tüm Dersler</option>
+    </select>
+    <div class="type-tabs">
+      <button class="type-tab active" data-t="" onclick="setTypeFilter(this,'')">Tümü</button>
+      <button class="type-tab" data-t="solution" onclick="setTypeFilter(this,'solution')">Çözümler</button>
+      <button class="type-tab" data-t="ogren_set" onclick="setTypeFilter(this,'ogren_set')">Öğren Setleri</button>
+    </div>
+    <div class="fav-toggle" id="fav-toggle" onclick="toggleFavFilter()">★ Sadece Favoriler</div>
+  </div>
+
+  <div class="lib-grid" id="lib-grid"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Detay</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ── THEME ──
+(function(){
+  const saved = localStorage.getItem('ykskafa-theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+function toggleTheme(){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('ykskafa-theme','dark'); document.getElementById('theme-btn').textContent='🌙'; }
+  else { document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('ykskafa-theme','light'); document.getElementById('theme-btn').textContent='☀️'; }
+}
+document.getElementById('theme-btn').textContent = document.documentElement.getAttribute('data-theme')==='light' ? '☀️' : '🌙';
+
+const dersColors = {Matematik:'#c8f53c',Fizik:'#3cf5e8',Kimya:'#f53caa',Biyoloji:'#3cf58a',Türkçe:'#7c6af7',Tarih:'#f53c7a',Coğrafya:'#f5a23c',Geometri:'#a23cf5'};
+let typeFilter = '';
+let favOnly = false;
+
+function seedIfEmpty(){
+  const lib = JSON.parse(localStorage.getItem('ykskafa_library') || '[]');
+  if (lib.length) return;
+  const seed = [
+    { id:'seed1', type:'solution', ders:'Matematik', konu:'2. Derece Denklem', steps:['Denklemi standart forma getiriyoruz: x² − 5x + 6 = 0.','Çarpanlarına ayırıyoruz: (x−2)(x−3)=0.','Kökler: x=2, x=3.','Kökler toplamı = 5.'], answer:'5', tags:['Vieta','AYT Matematik'], favorite:true, createdAt:new Date(Date.now()-86400000).toISOString() },
+    { id:'seed2', type:'ogren_set', ders:'Tarih', konu:'Tanzimat Fermanı', cardCount:8, favorite:false, createdAt:new Date(Date.now()-3*86400000).toISOString() },
+    { id:'seed3', type:'solution', ders:'Fizik', konu:'Hareket', steps:['Verilenleri listeliyoruz.','v = v₀ + a·t formülünü yazıyoruz.','Değerleri yerleştiriyoruz.','Birim kontrolü yapıyoruz.'], answer:'12 m/s', tags:['Kinematik','TYT Fizik'], favorite:true, createdAt:new Date(Date.now()-5*86400000).toISOString() },
+  ];
+  localStorage.setItem('ykskafa_library', JSON.stringify(seed));
+}
+seedIfEmpty();
+
+function getLib(){ return JSON.parse(localStorage.getItem('ykskafa_library') || '[]'); }
+function setLib(lib){ localStorage.setItem('ykskafa_library', JSON.stringify(lib)); }
+
+function setTypeFilter(el, t){
+  typeFilter = t;
+  document.querySelectorAll('.type-tab').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+function toggleFavFilter(){
+  favOnly = !favOnly;
+  document.getElementById('fav-toggle').classList.toggle('active', favOnly);
+  render();
+}
+
+function populateDersFilter(lib){
+  const sel = document.getElementById('filter-ders');
+  const current = sel.value;
+  const ders = [...new Set(lib.map(x=>x.ders))].sort();
+  sel.innerHTML = '<option value="">Tüm Dersler</option>' + ders.map(d=>`<option value="${d}">${d}</option>`).join('');
+  sel.value = current;
+}
+
+function render(){
+  const lib = getLib();
+  populateDersFilter(lib);
+  const q = document.getElementById('search').value.toLowerCase();
+  const dersSel = document.getElementById('filter-ders').value;
+
+  const filtered = lib.filter(x => {
+    if (typeFilter && x.type !== typeFilter) return false;
+    if (favOnly && !x.favorite) return false;
+    if (dersSel && x.ders !== dersSel) return false;
+    if (q && !(x.konu.toLowerCase().includes(q) || x.ders.toLowerCase().includes(q))) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('lib-grid');
+  if (!filtered.length){
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">${lib.length ? 'Filtreye uyan kayıt yok' : 'Kütüphanen henüz boş'}</div>
+        <div class="empty-desc">${lib.length ? 'Farklı bir filtre dene.' : 'Bir soru çöz ya da bir öğren seti oluştur, buraya kaydolsun.'}</div>
+        <div class="empty-cta">
+          <a href="ykskafa_solve.html" class="empty-btn">📷 Soru Çöz</a>
+          <a href="ykskafa_ogren.html" class="empty-btn outline">📖 Öğren</a>
+        </div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((x,i) => {
+    const idx = lib.indexOf(x);
+    const color = dersColors[x.ders] || '#7c6af7';
+    const icon = x.type === 'solution' ? '📷' : '📖';
+    const metaRight = x.type === 'solution' ? `${x.steps.length} adım` : `${x.cardCount} kart`;
+    const tags = x.type === 'solution' ? (x.tags||[]) : [];
+    return `
+    <div class="lib-card" onclick="openModal('${x.id}')">
+      <button class="fav-star ${x.favorite?'on':''}" onclick="event.stopPropagation();toggleFav('${x.id}')">★</button>
+      <div class="lib-top">
+        <span class="lib-type-icon">${icon}</span>
+        <span class="lib-ders" style="border-color:${color}55;color:${color}">${x.ders}</span>
+        <span class="lib-offline">● Offline</span>
+      </div>
+      <div class="lib-konu">${x.konu}</div>
+      <div class="lib-meta"><span>${metaRight}</span><span>${timeAgo(x.createdAt)}</span></div>
+      ${tags.length ? `<div class="lib-tags">${tags.map(t=>`<span class="lib-tag">${t}</span>`).join('')}</div>` : ''}
+      <button class="lib-del" onclick="event.stopPropagation();deleteItem('${x.id}')">Sil</button>
+    </div>`;
+  }).join('');
+}
+
+function timeAgo(iso){
+  const diff = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'Bugün';
+  if (days === 1) return 'Dün';
+  return `${days} gün önce`;
+}
+
+function toggleFav(id){
+  const lib = getLib();
+  const item = lib.find(x=>x.id===id);
+  if (item) item.favorite = !item.favorite;
+  setLib(lib);
+  render();
+}
+function deleteItem(id){
+  setLib(getLib().filter(x=>x.id!==id));
+  render();
+}
+
+function openModal(id){
+  const item = getLib().find(x=>x.id===id);
+  if (!item) return;
+  document.getElementById('modal-title').textContent = `${item.ders} — ${item.konu}`;
+  const body = document.getElementById('modal-body');
+  if (item.type === 'solution'){
+    body.innerHTML = item.steps.map((s,i)=>`<div class="modal-step"><b>${i+1}.</b> ${s}</div>`).join('') +
+      `<div class="modal-step" style="border-color:var(--success);color:var(--success)"><b>Cevap:</b> ${item.answer}</div>`;
+  } else {
+    body.innerHTML = `<div class="modal-step">Bu sette <b>${item.cardCount}</b> bilgi kartı var. Tam seti tekrar çalışmak için Öğren sayfasını aç.</div>
+      <a href="ykskafa_ogren.html" class="empty-btn" style="display:inline-block;margin-top:6px;text-align:center;text-decoration:none">Öğren sayfasına git</a>`;
+  }
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('show'); }
+
+render();
+</script>
+</body>
+</html>

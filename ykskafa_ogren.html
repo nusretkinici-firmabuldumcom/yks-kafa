@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Öğren</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--surface:#0e0e1a;--surface2:#13131f;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0ff;--muted:#8b89a8;--accent:#c8f53c;--accent2:#7c6af7;--accent3:#f53c7a;--success:#3cf58a;--warn:#f5a23c;--nav-bg:rgba(8,8,16,.9);--syne:'Syne',sans-serif;--dm:'DM Sans',sans-serif}
+[data-theme="light"]{--bg:#f4f3fa;--surface:#ffffff;--surface2:#f0eefa;--border:rgba(20,16,40,0.08);--border2:rgba(20,16,40,0.14);--text:#161426;--muted:#6b6885;--nav-bg:rgba(255,255,255,.85)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--dm);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s ease,color .25s ease}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,106,247,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(124,106,247,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+
+.topnav{position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px}
+.nav-left{display:flex;align-items:center;gap:20px}
+.logo{font-family:var(--syne);font-size:18px;font-weight:800;letter-spacing:-1px;text-decoration:none;color:var(--text)}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-links a{font-size:13px;color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:2px;transition:all .2s}
+.nav-links a:hover{color:var(--text);background:rgba(124,106,247,.08)}
+.nav-links a.active{color:var(--accent2);background:rgba(124,106,247,.1)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.theme-toggle{width:34px;height:34px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent2)}
+.nav-streak{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:5px 12px}
+.nav-streak span{color:var(--accent);font-family:var(--syne);font-weight:700}
+
+.main{position:relative;z-index:1;max-width:1180px;margin:0 auto;width:100%;padding:32px 28px;display:grid;grid-template-columns:1fr 300px;gap:24px}
+@media(max-width:960px){.main{grid-template-columns:1fr}.right-col{display:none}}
+.page-head{grid-column:1/-1;margin-bottom:4px}
+.page-title{font-family:var(--syne);font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.page-desc{font-size:14px;color:var(--muted);font-weight:300}
+
+.card{background:var(--surface);border:1px solid var(--border);padding:24px}
+.card-title{font-family:var(--syne);color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;margin-bottom:14px}
+
+.q-textarea{width:100%;min-height:150px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--dm);font-size:14px;font-weight:300;padding:14px 16px;resize:vertical;outline:none}
+.q-textarea:focus{border-color:var(--accent2)}
+.q-textarea::placeholder{color:var(--muted);opacity:.7}
+
+.opt-row{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap;align-items:center}
+.opt-row label{font-size:12px;color:var(--muted)}
+.opt-row select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--dm);font-size:13px;padding:8px 12px;outline:none}
+
+.btn-gen{width:100%;background:var(--accent2);color:#fff;font-family:var(--dm);font-size:14px;font-weight:500;padding:14px;border:none;cursor:pointer;transition:all .2s;margin-top:4px}
+.btn-gen:hover{opacity:.9}
+.btn-gen:disabled{opacity:.4;pointer-events:none}
+
+.output{display:none;margin-top:20px;animation:fadeIn .4s ease}
+.output.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.out-tabs{display:flex;gap:8px;margin-bottom:16px}
+.out-tab{padding:9px 16px;font-size:13px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.out-tab.active{border-color:var(--accent2);color:var(--accent2);background:rgba(124,106,247,.07)}
+.out-panel{display:none}
+.out-panel.show{display:block}
+
+/* Summary */
+.summary-list{display:flex;flex-direction:column;gap:10px}
+.summary-item{display:flex;gap:10px;font-size:14px;line-height:1.7;font-weight:300;padding:12px 16px;background:var(--surface2);border-left:2px solid var(--accent2)}
+.summary-item b{color:var(--accent2);font-weight:500}
+
+/* Flashcards */
+.deck-wrap{display:flex;flex-direction:column;align-items:center;gap:16px}
+.flashcard{width:100%;max-width:460px;height:220px;perspective:1200px;cursor:pointer}
+.flashcard-inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.flashcard.flipped .flashcard-inner{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;background:var(--surface2);border:1px solid rgba(124,106,247,.25);display:flex;align-items:center;justify-content:center;text-align:center;padding:28px;font-size:16px;font-weight:400;line-height:1.6}
+.fc-face.back{transform:rotateY(180deg);border-color:rgba(200,245,60,.3);color:var(--accent)}
+.fc-tag{position:absolute;top:12px;left:14px;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.deck-controls{display:flex;align-items:center;gap:14px}
+.deck-btn{width:36px;height:36px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-size:14px;transition:all .2s}
+.deck-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.deck-dots{display:flex;gap:5px}
+.deck-dot{width:6px;height:6px;border-radius:50%;background:var(--border2)}
+.deck-dot.active{background:var(--accent2)}
+.deck-hint{font-size:11px;color:var(--muted)}
+
+/* Mini quiz */
+.mq-item{background:var(--surface2);border:1px solid var(--border);padding:20px 22px;margin-bottom:14px}
+.mq-item:last-child{margin-bottom:0}
+.mq-q{font-size:14px;font-weight:400;margin-bottom:14px}
+.mq-opts{display:flex;flex-direction:column;gap:8px}
+.mq-opt{padding:10px 14px;border:1px solid var(--border2);font-size:13px;cursor:pointer;transition:all .2s}
+.mq-opt:hover{border-color:rgba(124,106,247,.4)}
+.mq-opt.correct{border-color:var(--success)!important;background:rgba(60,245,138,.08)}
+.mq-opt.wrong{border-color:var(--accent3)!important;background:rgba(245,60,122,.08)}
+.mq-explain{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;display:none;padding-top:10px;border-top:1px solid var(--border)}
+.mq-explain.show{display:block}
+
+.save-row{display:flex;justify-content:flex-end;margin-top:18px}
+.btn-save{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:12px;padding:9px 16px;cursor:pointer;transition:all .2s}
+.btn-save:hover{border-color:var(--accent);color:var(--accent)}
+.btn-save.saved{border-color:var(--accent);color:var(--accent);background:rgba(200,245,60,.08)}
+
+.right-col{display:flex;flex-direction:column;gap:16px}
+.info-card{background:rgba(124,106,247,.06);border:1px solid rgba(124,106,247,.18);padding:20px}
+.info-title{font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:10px}
+.info-text{font-size:13px;color:var(--muted);line-height:1.7;font-weight:300}
+.recent-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer}
+.recent-item:last-child{border-bottom:none}
+.recent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.recent-txt{flex:1;color:var(--muted);font-weight:300}
+.recent-txt strong{color:var(--text);font-weight:400}
+.spin-dots{display:inline-flex;gap:4px}
+.spin-dots span{width:5px;height:5px;background:#fff;border-radius:50%;animation:spinDot 1s infinite ease-in-out}
+.spin-dots span:nth-child(2){animation-delay:.15s}
+.spin-dots span:nth-child(3){animation-delay:.3s}
+@keyframes spinDot{0%,80%,100%{opacity:.25;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
+@media(max-width:600px){.main{padding:20px 16px}.nav-links{display:none}}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-left">
+    <a href="web%20sayfa/index.html" class="logo">YKS<span>KAFA</span></a>
+    <div class="nav-links">
+      <a href="ykskafa_dashboard.html">Dashboard</a>
+      <a href="ykskafa_quiz.html">Soru Çöz</a>
+      <a href="ykskafa_solve.html">Fotoğrafla Çöz</a>
+      <a href="ykskafa_ogren.html" class="active">Öğren</a>
+      <a href="ykskafa_kutuphane.html">Kütüphane</a>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-streak">🔥 Seri: <span>7</span> gün</div>
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Tema değiştir">🌙</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-head">
+    <div class="page-title">📖 Öğren</div>
+    <div class="page-desc">Ders notunu, konu özetini ya da kitap sayfasını yapıştır — AI senin için özet, bilgi kartları ve mini quiz hazırlasın.</div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">Kaynak Metin</div>
+      <textarea class="q-textarea" id="notes-input" placeholder="Örn: Osmanlı Devleti'nde Tanzimat Fermanı 1839'da ilan edildi. Bu fermanla kanun önünde eşitlik ilkesi kabul edildi..."></textarea>
+      <div class="opt-row">
+        <label>Ders:</label>
+        <select id="ogren-subject" onchange="populateKonuSelect()">
+          <option>Otomatik Algıla</option>
+        </select>
+        <label>Konu:</label>
+        <select id="ogren-konu">
+          <option value="">Otomatik (metinden çıkar)</option>
+        </select>
+        <label>Kart sayısı:</label>
+        <select id="ogren-count">
+          <option>5</option>
+          <option selected>8</option>
+          <option>12</option>
+        </select>
+      </div>
+      <button class="btn-gen" id="btn-gen" onclick="generateSet()">Oluştur →</button>
+    </div>
+
+    <div class="output" id="output">
+      <div class="out-tabs">
+        <button class="out-tab active" data-p="summary" onclick="setPanel('summary')">📝 Özet</button>
+        <button class="out-tab" data-p="cards" onclick="setPanel('cards')">🃏 Bilgi Kartları</button>
+        <button class="out-tab" data-p="quiz" onclick="setPanel('quiz')">✅ Mini Quiz</button>
+      </div>
+
+      <div class="card">
+        <div class="out-panel show" id="panel-summary">
+          <div class="summary-list" id="summary-list"></div>
+        </div>
+
+        <div class="out-panel" id="panel-cards">
+          <div class="deck-wrap">
+            <div class="flashcard" id="flashcard" onclick="flipCard()">
+              <div class="flashcard-inner">
+                <div class="fc-face front"><span class="fc-tag">Soru</span><span id="fc-front"></span></div>
+                <div class="fc-face back"><span class="fc-tag">Cevap</span><span id="fc-back"></span></div>
+              </div>
+            </div>
+            <div class="deck-controls">
+              <button class="deck-btn" onclick="prevCard()">←</button>
+              <div class="deck-dots" id="deck-dots"></div>
+              <button class="deck-btn" onclick="nextCard()">→</button>
+            </div>
+            <div class="deck-hint">Kartlara tıklayarak çevir</div>
+          </div>
+        </div>
+
+        <div class="out-panel" id="panel-quiz">
+          <div id="quiz-list"></div>
+        </div>
+
+        <div class="save-row">
+          <button class="btn-save" id="btn-save-set" onclick="saveSet()">☆ Kütüphaneye Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-col">
+    <div class="info-card">
+      <div class="info-title">İpucu</div>
+      <div class="info-text">Ne kadar uzun ve detaylı metin verirsen AI o kadar isabetli kart ve soru üretir. Ders kitabından bir sayfayı direkt yapıştırabilirsin.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Son Setler</div>
+      <div id="recent-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="konu_listesi.js"></script>
+<script>
+// ── REAL TYT/AYT DERS + KONU LİSTESİ (kaynak: konu_listesi.js) ──
+function populateDersSelect(){
+  const sel = document.getElementById('ogren-subject');
+  ykskafaTumDersler().forEach(d => sel.innerHTML += `<option>${d}</option>`);
+  populateKonuSelect();
+}
+function populateKonuSelect(){
+  const ders = document.getElementById('ogren-subject').value;
+  const konuSel = document.getElementById('ogren-konu');
+  const konular = ders === 'Otomatik Algıla' ? [] : ykskafaKonular(ders);
+  konuSel.innerHTML = '<option value="">Otomatik (metinden çıkar)</option>' + konular.map(k=>`<option>${k}</option>`).join('');
+}
+populateDersSelect();
+
+// ── THEME ──
+(function(){
+  const saved = localStorage.getItem('ykskafa-theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+function toggleTheme(){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('ykskafa-theme','dark'); document.getElementById('theme-btn').textContent='🌙'; }
+  else { document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('ykskafa-theme','light'); document.getElementById('theme-btn').textContent='☀️'; }
+}
+document.getElementById('theme-btn').textContent = document.documentElement.getAttribute('data-theme')==='light' ? '☀️' : '🌙';
+
+// ── TABS ──
+function setPanel(p){
+  document.querySelectorAll('.out-tab').forEach(t => t.classList.toggle('active', t.dataset.p===p));
+  document.querySelectorAll('.out-panel').forEach(el => el.classList.remove('show'));
+  document.getElementById('panel-'+p).classList.add('show');
+}
+
+// ── GENERATE ──
+let currentSet = null;
+let cardIndex = 0;
+
+async function generateSet(){
+  const text = document.getElementById('notes-input').value.trim();
+  if (!text) { document.getElementById('notes-input').focus(); return; }
+  const subject = document.getElementById('ogren-subject').value;
+  const konuSecim = document.getElementById('ogren-konu').value;
+  const count = parseInt(document.getElementById('ogren-count').value);
+
+  const btn = document.getElementById('btn-gen');
+  btn.disabled = true;
+  btn.innerHTML = 'AI hazırlıyor <span class="spin-dots"><span></span><span></span><span></span></span>';
+
+  let result;
+  try {
+    const res = await fetch('https://n8n.ykskafa.com/webhook/ogren-uret', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ metin:text, ders:subject, konu:konuSecim, kart_sayisi:count })
+    });
+    if (!res.ok) throw new Error('offline');
+    result = await res.json();
+  } catch(e) {
+    await new Promise(r => setTimeout(r, 1000));
+    result = mockGenerate(text, subject, count, konuSecim);
+  }
+
+  currentSet = result;
+  cardIndex = 0;
+  renderSet(result);
+  btn.disabled = false;
+  btn.textContent = 'Oluştur →';
+}
+
+function mockGenerate(text, subject, count, konuSecim){
+  const ders = subject === 'Otomatik Algıla' ? 'Tarih' : subject;
+  const konu = konuSecim || ykskafaRastgeleKonu(ders) || (text.split(/[.!?]/)[0].slice(0,40)) || 'Konu Özeti';
+  const summary = [
+    'Metnin ana konusu, verilen olayın tarihsel/bilimsel arka planını ortaya koyuyor.',
+    'Belirtilen tarih ve kavramlar sınavda doğrudan soru olarak karşına çıkabilir.',
+    'Neden-sonuç ilişkisini kur: bu gelişme hangi ihtiyaçtan doğdu, hangi sonuca yol açtı?',
+    'Kısa ve öz olarak: en az bir örnek olayla birlikte hatırlarsan kalıcı olur.'
+  ];
+  const fronts = ['Bu konunun temel kavramı nedir?','Hangi tarihte/koşulda gerçekleşti?','En sık sorulan tuzak nedir?','Bununla ilişkili diğer kavram hangisi?','Bir cümlede özetle.','Sınavda nasıl sorulur?','Hangi örnekle akılda kalır?','Karşıt görüş var mı?'];
+  const backs = ['Metinde geçen ana kavram ve tanımı.','Metinde belirtilen tarih/koşul bilgisi.','Benzer kavramlarla karıştırılması sık yapılan hata.','Konuyla dolaylı bağlantılı ikinci bir kavram.','Metnin bir cümlelik özeti.','Genelde "aşağıdakilerden hangisi" formatında sorulur.','Somut bir örnek üzerinden pekiştirme.','Var olan bir tartışma/karşıt görüş varsa özeti.'];
+  const cards = Array.from({length:count}, (_,i) => ({ front: fronts[i%fronts.length], back: backs[i%backs.length] }));
+  const quiz = [
+    { q:'Metne göre asıl anlatılmak istenen nedir?', opts:['Konunun sadece tarihi önemi','Konunun günümüze etkisi ve nedensellik zinciri','Konunun sınavla ilgisi yoktur','Sadece bir tanım'], correct:1, explain:'Metin, olayı tek bir tanım olarak değil, neden-sonuç zinciri içinde ele alıyor.' },
+    { q:'Bu konu ile ilgili en sık yapılan hata hangisidir?', opts:['Tarihleri karıştırmak','Kavramı hiç bilmemek','Sadece ezber yapıp anlamamak','Hepsi'], correct:3, explain:'Sınavda genelde bu üç hata birlikte görülür — kavramı anlamadan ezberlemek en büyük risktir.' }
+  ];
+  return { ders, konu, summary, cards, quiz };
+}
+
+function renderSet(set){
+  document.getElementById('output').classList.add('show');
+  document.getElementById('btn-save-set').classList.remove('saved');
+  document.getElementById('btn-save-set').textContent = '☆ Kütüphaneye Kaydet';
+
+  document.getElementById('summary-list').innerHTML = set.summary.map((s,i) => `<div class="summary-item"><b>${i+1}.</b> ${s}</div>`).join('');
+
+  cardIndex = 0;
+  renderCard();
+  document.getElementById('deck-dots').innerHTML = set.cards.map((_,i)=>`<div class="deck-dot${i===0?' active':''}"></div>`).join('');
+
+  document.getElementById('quiz-list').innerHTML = set.quiz.map((q,qi) => `
+    <div class="mq-item">
+      <div class="mq-q">${qi+1}. ${q.q}</div>
+      <div class="mq-opts" id="mq-opts-${qi}">
+        ${q.opts.map((o,oi)=>`<div class="mq-opt" onclick="answerMQ(${qi},${oi})">${String.fromCharCode(65+oi)}) ${o}</div>`).join('')}
+      </div>
+      <div class="mq-explain" id="mq-explain-${qi}">${q.explain}</div>
+    </div>`).join('');
+
+  setPanel('summary');
+}
+
+function renderCard(){
+  const c = currentSet.cards[cardIndex];
+  const fc = document.getElementById('flashcard');
+  fc.classList.remove('flipped');
+  document.getElementById('fc-front').textContent = c.front;
+  document.getElementById('fc-back').textContent = c.back;
+  document.querySelectorAll('.deck-dot').forEach((d,i)=>d.classList.toggle('active', i===cardIndex));
+}
+function flipCard(){ document.getElementById('flashcard').classList.toggle('flipped'); }
+function nextCard(){ cardIndex = (cardIndex+1) % currentSet.cards.length; renderCard(); }
+function prevCard(){ cardIndex = (cardIndex-1+currentSet.cards.length) % currentSet.cards.length; renderCard(); }
+
+function answerMQ(qi, oi){
+  const q = currentSet.quiz[qi];
+  const optsEl = document.getElementById(`mq-opts-${qi}`);
+  if (optsEl.dataset.answered) return;
+  optsEl.dataset.answered = '1';
+  [...optsEl.children].forEach((el,i) => {
+    if (i === q.correct) el.classList.add('correct');
+    else if (i === oi) el.classList.add('wrong');
+  });
+  document.getElementById(`mq-explain-${qi}`).classList.add('show');
+}
+
+// ── SAVE ──
+function saveSet(){
+  if (!currentSet) return;
+  const lib = JSON.parse(localStorage.getItem('ykskafa_library') || '[]');
+  lib.unshift({
+    id: 'set_' + Date.now(),
+    type: 'ogren_set',
+    ders: currentSet.ders,
+    konu: currentSet.konu,
+    cardCount: currentSet.cards.length,
+    favorite: true,
+    createdAt: new Date().toISOString()
+  });
+  localStorage.setItem('ykskafa_library', JSON.stringify(lib));
+  document.getElementById('btn-save-set').classList.add('saved');
+  document.getElementById('btn-save-set').textContent = '★ Kaydedildi';
+  renderRecent();
+}
+
+function renderRecent(){
+  const lib = JSON.parse(localStorage.getItem('ykskafa_library') || '[]').filter(x=>x.type==='ogren_set').slice(0,5);
+  const el = document.getElementById('recent-list');
+  const colors = {Matematik:'#c8f53c',Fizik:'#3cf5e8',Kimya:'#f53caa',Biyoloji:'#3cf58a',Türkçe:'#7c6af7',Tarih:'#f53c7a',Coğrafya:'#f5a23c'};
+  if (!lib.length){ el.innerHTML = '<div style="font-size:12px;color:var(--muted);font-weight:300">Henüz kayıtlı setin yok.</div>'; return; }
+  el.innerHTML = lib.map(x => `
+    <div class="recent-item" onclick="location.href='ykskafa_kutuphane.html'">
+      <div class="recent-dot" style="background:${colors[x.ders]||'#7c6af7'}"></div>
+      <div class="recent-txt"><strong>${x.ders}</strong> — ${x.konu}</div>
+    </div>`).join('');
+}
+renderRecent();
+</script>
+</body>
+</html>

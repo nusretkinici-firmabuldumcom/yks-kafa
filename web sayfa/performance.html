@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Performans Analizi - YKS Hazırlık Platformu">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Performans Analizi - YKS Hazırlık Platformu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/performance.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>YKS Hazırlık</span>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-home"></i> Ana Sayfa
+                    </a>
+                    <a href="tyt.html" class="nav-link">
+                        <i class="fas fa-book"></i> TYT
+                    </a>
+                    <a href="ayt.html" class="nav-link">
+                        <i class="fas fa-graduation-cap"></i> AYT
+                    </a>
+                    <a href="pricing.html" class="nav-link">
+                        <i class="fas fa-crown"></i> Premium
+                    </a>
+                    <a href="performance.html" class="nav-link active">
+                        <i class="fas fa-chart-line"></i> Performans
+                    </a>
+                </nav>
+                <div class="user-info">
+                    <span id="userNameDisplay"><i class="fas fa-user"></i> Kullanıcı</span>
+                    <button onclick="handleLogout()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1><i class="fas fa-chart-line"></i> Performans Analizi</h1>
+                <p>Detaylı istatistikler ve performans takibi</p>
+            </div>
+
+            <!-- Overall Stats -->
+            <section class="overall-stats">
+                <h2><i class="fas fa-trophy"></i> Genel İstatistikler</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="overallTotal">0</h3>
+                            <p>Toplam Soru</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="overallCorrect">0</h3>
+                            <p>Doğru Cevap</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="overallWrong">0</h3>
+                            <p>Yanlış Cevap</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="overallRate">0%</h3>
+                            <p>Başarı Oranı</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-bar"></i> Ders Bazlı Performans</h3>
+                        <div style="height: 400px;">
+                            <canvas id="subjectChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-pie"></i> Sınav Tipi Dağılımı</h3>
+                        <div style="height: 400px;">
+                            <canvas id="examTypeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Filter Section -->
+            <section class="filter-section">
+                <h2><i class="fas fa-filter"></i> Detaylı Performans Tablosu</h2>
+                <div class="filter-controls">
+                    <select id="examTypeFilter" onchange="filterTable()">
+                        <option value="">Tüm Sınavlar</option>
+                        <option value="TYT">TYT</option>
+                        <option value="AYT">AYT</option>
+                    </select>
+                    <select id="subjectFilter" onchange="filterTable()">
+                        <option value="">Tüm Dersler</option>
+                    </select>
+                    <select id="difficultyFilter" onchange="filterTable()">
+                        <option value="">Tüm Zorluklar</option>
+                        <option value="Kolay">Kolay</option>
+                        <option value="Orta">Orta</option>
+                        <option value="Zor">Zor</option>
+                    </select>
+                    <button onclick="exportTableData()" class="btn btn-secondary">
+                        <i class="fas fa-download"></i> Excel İndir
+                    </button>
+                </div>
+            </section>
+
+            <!-- Performance Table -->
+            <section class="performance-table-section">
+                <div class="table-responsive">
+                    <table class="performance-table">
+                        <thead>
+                            <tr>
+                                <th>Sınav Tipi</th>
+                                <th>Ders</th>
+                                <th>Konu</th>
+                                <th>Zorluk</th>
+                                <th>Toplam Soru</th>
+                                <th>Doğru</th>
+                                <th>Yanlış</th>
+                                <th>Başarı Oranı</th>
+                                <th>Son Güncelleme</th>
+                            </tr>
+                        </thead>
+                        <tbody id="performanceTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center">Yükleniyor...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Progress by Topic -->
+            <section class="topic-progress-section">
+                <h2><i class="fas fa-tasks"></i> Konu Bazlı İlerleme</h2>
+                <div id="topicProgressContainer" class="topic-progress-container">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Recommendations -->
+            <section class="recommendations-section">
+                <h2><i class="fas fa-lightbulb"></i> Öneriler</h2>
+                <div id="recommendationsContainer" class="recommendations-container">
+                    <div class="recommendation-card">
+                        <div class="recommendation-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="recommendation-content">
+                            <h4>Soru Çözmeye Başla</h4>
+                            <p>Henüz soru çözmediniz. Performans analiziniz için soru çözmeye başlayın.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 YKS Hazırlık Platformu. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/performance.js"></script>
+</body>
+</html>

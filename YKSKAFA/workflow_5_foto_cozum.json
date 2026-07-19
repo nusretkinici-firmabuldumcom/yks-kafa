@@ -1,0 +1,166 @@
+{
+  "name": "YKS KAFA - Fotoğrafla Çöz (GPT-4o Vision)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "foto-coz",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Foto Çözüm Talebi",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "ykskafa-foto-coz",
+      "notes": "POST /webhook/foto-coz\nBody: { mod: 'photo'|'text', metin, gorsel (base64 data URL), ders, kullanici_id }"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "id": "check-input",
+              "leftValue": "={{ $json.body.gorsel || $json.body.metin }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "validate-input",
+      "name": "Girdi Doğrulama",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook - Foto Çözüm Talebi').first().json.body;\nconst ders = body.ders && body.ders !== 'Otomatik' ? body.ders : null;\n\nconst systemPrompt = \"Sen Solvi tarzında çalışan bir YKS yapay zeka öğretmenisin. Sana gelen soruyu (fotoğraf ya da metin) adım adım, videoda anlatır gibi kısa ve net cümlelerle çözüyorsun. Her adım tek başına sesli okunduğunda anlaşılır olmalı. Her zaman geçerli JSON döndür.\";\n\nconst userTextParts = [];\nuserTextParts.push({\n  type: 'text',\n  text: `Bu soruyu ${ders ? ders + ' dersi kapsamında' : 'dersi kendin tespit ederek'} adım adım çöz.\\n${body.metin ? 'Soru metni: ' + body.metin : ''}\\n\\nJSON formatında yanıt ver:\\n{\\n  \\\"ders\\\": \\\"...\\\",\\n  \\\"konu\\\": \\\"...\\\",\\n  \\\"steps\\\": [\\\"adım 1\\\", \\\"adım 2\\\", \\\"adım 3\\\", \\\"adım 4\\\"],\\n  \\\"answer\\\": \\\"...\\\",\\n  \\\"tags\\\": [\\\"...\\\", \\\"...\\\"]\\n}\\n\\nHer adım en fazla 2 cümle olsun, sesli anlatıma uygun, sade Türkçe kullan.`\n});\nif (body.gorsel) {\n  userTextParts.push({ type: 'image_url', image_url: { url: body.gorsel } });\n}\n\nreturn [{ json: { systemPrompt, userContent: userTextParts, ders_input: ders, kullanici_id: body.kullanici_id } }];"
+      },
+      "id": "build-prompt",
+      "name": "Prompt Oluştur",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.OPENAI_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "model", "value": "gpt-4o" },
+            { "name": "response_format", "value": "={ \"type\": \"json_object\" }" },
+            {
+              "name": "messages",
+              "value": "=[\n  { \"role\": \"system\", \"content\": {{ JSON.stringify($json.systemPrompt) }} },\n  { \"role\": \"user\", \"content\": {{ JSON.stringify($json.userContent) }} }\n]"
+            },
+            { "name": "max_tokens", "value": "900" },
+            { "name": "temperature", "value": "0.4" }
+          ]
+        }
+      },
+      "id": "openai-vision",
+      "name": "GPT-4o Vision Çöz",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices[0].message.content;\nlet sol;\ntry {\n  sol = JSON.parse(content);\n} catch(e) {\n  throw new Error('GPT yanıtı JSON parse edilemedi: ' + content);\n}\n\nconst kullanici_id = $('Prompt Oluştur').first().json.kullanici_id;\n\nreturn [{\n  json: {\n    ders: sol.ders,\n    konu: sol.konu,\n    steps: sol.steps,\n    answer: sol.answer,\n    tags: sol.tags || [],\n    kullanici_id: kullanici_id,\n    olusturulma_tarihi: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-solution",
+      "name": "Çözümü İşle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/kutuphane_cozumler",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"kullanici_id\": {{ $json.kullanici_id ? '\"' + $json.kullanici_id + '\"' : null }},\n  \"ders\": \"{{ $json.ders }}\",\n  \"konu\": \"{{ $json.konu }}\",\n  \"adimlar\": {{ JSON.stringify($json.steps) }},\n  \"cevap\": \"{{ $json.answer }}\",\n  \"etiketler\": {{ JSON.stringify($json.tags) }},\n  \"tur\": \"foto_cozum\",\n  \"olusturulma_tarihi\": \"{{ $json.olusturulma_tarihi }}\"\n}"
+      },
+      "id": "save-to-supabase",
+      "name": "Supabase'e Kaydet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"ders\": \"{{ $('Çözümü İşle').item.json.ders }}\",\n  \"konu\": \"{{ $('Çözümü İşle').item.json.konu }}\",\n  \"steps\": {{ JSON.stringify($('Çözümü İşle').item.json.steps) }},\n  \"answer\": \"{{ $('Çözümü İşle').item.json.answer }}\",\n  \"tags\": {{ JSON.stringify($('Çözümü İşle').item.json.tags) }}\n}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "success-response",
+      "name": "Başarılı Yanıt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": false, \"error\": \"Fotoğraf veya soru metni gerekli\" }",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Hata Yanıtı",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 420]
+    }
+  ],
+  "connections": {
+    "Webhook - Foto Çözüm Talebi": {
+      "main": [[{ "node": "Girdi Doğrulama", "type": "main", "index": 0 }]]
+    },
+    "Girdi Doğrulama": {
+      "main": [
+        [{ "node": "Prompt Oluştur", "type": "main", "index": 0 }],
+        [{ "node": "Hata Yanıtı", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prompt Oluştur": {
+      "main": [[{ "node": "GPT-4o Vision Çöz", "type": "main", "index": 0 }]]
+    },
+    "GPT-4o Vision Çöz": {
+      "main": [[{ "node": "Çözümü İşle", "type": "main", "index": 0 }]]
+    },
+    "Çözümü İşle": {
+      "main": [[{ "node": "Supabase'e Kaydet", "type": "main", "index": 0 }]]
+    },
+    "Supabase'e Kaydet": {
+      "main": [[{ "node": "Başarılı Yanıt", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA - Solvi tarzı fotoğrafla/metinle soru çözümü. GPT-4o Vision ile adım adım çözüm üretir, Supabase kütüphanesine kaydeder. Frontend (ykskafa_solve.html) bu çözümü sesli anlatım + video benzeri oynatıcıyla sunar.",
+    "envVars": ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+  }
+}

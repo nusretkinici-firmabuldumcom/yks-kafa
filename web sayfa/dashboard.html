@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="YKS KAFA - Giriş Yap veya Üye Ol">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Giriş Yap - YKS KAFA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-brain" style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px;"></i>
+                        <span><span style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">KAFA</span> YKS Hazırlık</span>
+                    </a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-home"></i> Ana Sayfa
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Auth Container -->
+    <div class="auth-container">
+        <div class="auth-box">
+            <!-- Login Form -->
+            <div class="auth-form" id="loginForm">
+                <div class="auth-header">
+                    <h2><i class="fas fa-sign-in-alt"></i> Giriş Yap</h2>
+                    <p>Hesabına giriş yap ve öğrenmeye devam et</p>
+                </div>
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">
+                            <i class="fas fa-envelope"></i> E-posta
+                        </label>
+                        <input 
+                            type="email" 
+                            id="loginEmail" 
+                            class="form-control" 
+                            placeholder="ornek@email.com"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">
+                            <i class="fas fa-lock"></i> Şifre
+                        </label>
+                        <input 
+                            type="password" 
+                            id="loginPassword" 
+                            class="form-control" 
+                            placeholder="Şifrenizi girin"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Beni Hatırla</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Giriş Yap
+                    </button>
+                </form>
+                <div class="auth-footer">
+                    <p>Hesabın yok mu? <a href="#" onclick="showRegister(); return false;">Üye Ol</a></p>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div class="auth-form" id="registerForm" style="display: none;">
+                <div class="auth-header">
+                    <h2><i class="fas fa-user-plus"></i> Üye Ol</h2>
+                    <p>15 gün boyunca her dersten 40 soru ücretsiz!</p>
+                </div>
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="registerName">
+                            <i class="fas fa-user"></i> Ad Soyad
+                        </label>
+                        <input 
+                            type="text" 
+                            id="registerName" 
+                            class="form-control" 
+                            placeholder="Adınız Soyadınız"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">
+                            <i class="fas fa-envelope"></i> E-posta
+                        </label>
+                        <input 
+                            type="email" 
+                            id="registerEmail" 
+                            class="form-control" 
+                            placeholder="ornek@email.com"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">
+                            <i class="fas fa-lock"></i> Şifre
+                        </label>
+                        <input 
+                            type="password" 
+                            id="registerPassword" 
+                            class="form-control" 
+                            placeholder="Güçlü bir şifre oluşturun"
+                            required
+                            minlength="6"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPasswordConfirm">
+                            <i class="fas fa-lock"></i> Şifre Tekrar
+                        </label>
+                        <input 
+                            type="password" 
+                            id="registerPasswordConfirm" 
+                            class="form-control" 
+                            placeholder="Şifrenizi tekrar girin"
+                            required
+                            minlength="6"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="agreeTerms" required>
+                            <span><a href="kvkk.html" target="_blank">KVKK</a> ve <a href="gizlilik.html" target="_blank">Gizlilik Politikası</a>'nı okudum, kabul ediyorum</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-user-plus"></i> Üye Ol
+                    </button>
+                </form>
+                <div class="auth-footer">
+                    <p>Zaten hesabın var mı? <a href="#" onclick="showLogin(); return false;">Giriş Yap</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box-auth">
+            <div class="info-item">
+                <i class="fas fa-gift"></i>
+                <div>
+                    <strong>15 Gün Ücretsiz</strong>
+                    <p>Her dersten 40 soru hakkı</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-brain"></i>
+                <div>
+                    <strong>Yapay Zeka Desteği</strong>
+                    <p>Kişiselleştirilmiş sorular</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-chart-line"></i>
+                <div>
+                    <strong>Performans Takibi</strong>
+                    <p>Gelişimini izle</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Button -->
+    <a href="https://api.whatsapp.com/send?phone=905439679167&text=Merhaba%2C%20YKS%20KAFA%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." class="whatsapp-button" target="_blank" rel="noopener noreferrer" title="WhatsApp ile direkt mesaj at">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script>
+        // Check URL parameters
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            
+            if (mode === 'register') {
+                showRegister();
+            }
+        });
+
+        function showRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+
+        function showLogin() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Get users from database
+            fetch('tables/users?limit=1000')
+                .then(response => response.json())
+                .then(data => {
+                    const user = data.data.find(u => u.email === email && u.password === password);
+                    
+                    if (user) {
+                        // Save to localStorage
+                        localStorage.setItem('currentUser', JSON.stringify(user));
+                        showAlert('Giriş başarılı! Yönlendiriliyorsunuz...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'tyt.html';
+                        }, 1000);
+                    } else {
+                        showAlert('E-posta veya şifre hatalı!', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Login error:', error);
+                    showAlert('Giriş yapılırken bir hata oluştu!', 'error');
+                });
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            
+            console.log('Register form submitted');
+            
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+            
+            console.log('Form values:', { name, email, password: '***' });
+            
+            // Validate
+            if (password !== passwordConfirm) {
+                showAlert('Şifreler eşleşmiyor!', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert('Şifre en az 6 karakter olmalıdır!', 'error');
+                return;
+            }
+            
+            console.log('Validation passed, checking email...');
+            
+            // Check if email exists
+            fetch('tables/users?limit=1000')
+                .then(response => {
+                    console.log('Users fetch response:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Users data:', data);
+                    const exists = data.data.some(u => u.email === email);
+                    
+                    if (exists) {
+                        showAlert('Bu e-posta adresi zaten kullanılıyor!', 'error');
+                        throw new Error('Email exists');
+                    }
+                    
+                    console.log('Email available, creating user...');
+                    
+                    // Create new user
+                    const newUser = {
+                        full_name: name,
+                        email: email,
+                        password: password,
+                        username: email.split('@')[0],
+                        registration_date: new Date().toISOString(),
+                        subscription_status: 'free',
+                        subscription_start: new Date().toISOString(),
+                        total_questions_solved: 0,
+                        correct_answers: 0
+                    };
+                    
+                    console.log('Creating user:', newUser);
+                    
+                    return fetch('tables/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newUser)
+                    });
+                })
+                .then(response => {
+                    console.log('User creation response:', response);
+                    if (!response.ok) {
+                        throw new Error('User creation failed');
+                    }
+                    return response.json();
+                })
+                .then(user => {
+                    console.log('User created:', user);
+                    
+                    // Create subscription record
+                    const subscription = {
+                        user_id: user.id,
+                        plan_name: 'Ücretsiz',
+                        plan_type: 'free',
+                        start_date: new Date().toISOString(),
+                        status: 'active',
+                        subject_usage: {},  // Her ders için ayrı sayaç
+                        free_questions_used: 0
+                    };
+                    
+                    console.log('Creating subscription:', subscription);
+                    
+                    return fetch('tables/subscriptions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(subscription)
+                    }).then(subResponse => {
+                        console.log('Subscription creation response:', subResponse);
+                        return subResponse.json();
+                    }).then(() => {
+                        console.log('Subscription created, returning user');
+                        return user;
+                    });
+                })
+                .then(user => {
+                    console.log('Saving to localStorage:', user);
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    showAlert('Kayıt başarılı! 15 gün boyunca her dersten 40 soru hakkın var! 🎉', 'success');
+                    console.log('Redirecting to TYT page in 1.5 seconds...');
+                    setTimeout(() => {
+                        console.log('Redirecting now...');
+                        window.location.href = 'tyt.html';
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Register error:', error);
+                    if (error.message !== 'Email exists') {
+                        showAlert('Kayıt olurken bir hata oluştu: ' + error.message, 'error');
+                    }
+                });
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = message;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.animation = 'slideIn 0.3s ease';
+            
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

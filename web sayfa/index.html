@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="YKS KAFA - YKS Sınav Hazırlık Platformu. TYT ve AYT için yapay zeka destekli soru çözüm sistemi. Ücretsiz dene, başarıya ulaş!">
+    <meta name="keywords" content="YKS, TYT, AYT, sınav hazırlık, online eğitim, soru bankası, yapay zeka">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>YKS KAFA - YKS Hazırlık Platformu | TYT & AYT Soru Çözüm</title>
+    <link rel="stylesheet" href="css/landing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo-brand">
+                    <i class="fas fa-brain"></i>
+                    <span class="brand-name">YKS <span class="brand-highlight">KAFA</span></span>
+                </div>
+                <div class="nav-links">
+                    <a href="#home" class="nav-link">Ana Sayfa</a>
+                    <a href="#features" class="nav-link">Özellikler</a>
+                    <a href="#about" class="nav-link">Hakkımızda</a>
+                    <a href="#pricing" class="nav-link">Fiyatlar</a>
+                    <a href="#faq" class="nav-link">SSS</a>
+                </div>
+                <div class="nav-buttons">
+                    <a href="dashboard.html?mode=login" class="btn btn-outline">Giriş Yap</a>
+                    <a href="dashboard.html?mode=register" class="btn btn-primary">Ücretsiz Başla</a>
+                </div>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-content">
+            <button class="close-mobile-menu" onclick="toggleMobileMenu()">
+                <i class="fas fa-times"></i>
+            </button>
+            <a href="#home" class="mobile-link" onclick="toggleMobileMenu()">Ana Sayfa</a>
+            <a href="#features" class="mobile-link" onclick="toggleMobileMenu()">Özellikler</a>
+            <a href="#about" class="mobile-link" onclick="toggleMobileMenu()">Hakkımızda</a>
+            <a href="#pricing" class="mobile-link" onclick="toggleMobileMenu()">Fiyatlar</a>
+            <a href="#faq" class="mobile-link" onclick="toggleMobileMenu()">SSS</a>
+            <div class="mobile-buttons">
+                <a href="dashboard.html" class="btn btn-outline btn-block">Giriş Yap</a>
+                <a href="dashboard.html" class="btn btn-primary btn-block">Ücretsiz Başla</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-background">
+            <div class="hero-shape shape-1"></div>
+            <div class="hero-shape shape-2"></div>
+            <div class="hero-shape shape-3"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">
+                        YKS'de Başarının 
+                        <span class="gradient-text">Yeni Adresi</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Yapay zeka destekli soru çözüm sistemi ile TYT ve AYT'ye hazırlan. 
+                        <strong>15 gün ücretsiz</strong> deneme ile hemen başla!
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="dashboard.html?mode=register" class="btn btn-hero-primary">
+                            <i class="fas fa-rocket"></i> Ücretsiz Dene
+                        </a>
+                        <a href="#features" class="btn btn-hero-secondary">
+                            <i class="fas fa-play-circle"></i> Nasıl Çalışır?
+                        </a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-users"></i>
+                            <div>
+                                <strong>10,000+</strong>
+                                <span>Öğrenci</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-question-circle"></i>
+                            <div>
+                                <strong>50,000+</strong>
+                                <span>Soru Bankası</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-trophy"></i>
+                            <div>
+                                <strong>%95</strong>
+                                <span>Başarı Oranı</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="hero-card">
+                        <div class="card-header">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Matematik - Türev</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="question-preview">f(x) = x³ - 2x² + 3x fonksiyonunun türevi...</p>
+                            <div class="options-preview">
+                                <div class="option">A) 3x² - 4x + 3</div>
+                                <div class="option selected">B) 3x² - 2x + 3</div>
+                                <div class="option">C) x² - 4x + 3</div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <span class="badge badge-success">Doğru!</span>
+                            <span class="time">⏱️ 45 saniye</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Neden YKS KAFA?</h2>
+                <p>Başarıya ulaşmak için ihtiyacın olan her şey burada</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon ai">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>Yapay Zeka Desteği</h3>
+                    <p>GPT-4o teknolojisi ile sana özel soru üretimi. Her gün yeni ve özgün sorular.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon performance">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Detaylı Performans Analizi</h3>
+                    <p>Güçlü ve zayıf yönlerini keşfet. Hangi konuya daha fazla çalışman gerektiğini gör.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon unlimited">
+                        <i class="fas fa-infinity"></i>
+                    </div>
+                    <h3>Sınırsız Soru Bankası</h3>
+                    <p>TYT ve AYT için binlerce soru. Tüm dersler, tüm konular tek platformda.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon mobile">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>Her Yerden Erişim</h3>
+                    <p>Bilgisayar, tablet veya telefon. Her cihazdan sorunsuz çalış.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon support">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>7/24 Destek</h3>
+                    <p>Takıldığın yerde biz varız. Sorularını hızlıca cevaplıyoruz.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- YKS Info Section -->
+    <section class="yks-info">
+        <div class="container">
+            <div class="section-header">
+                <h2>YKS Hakkında Bilmen Gerekenler</h2>
+                <p>Sınav formatı, tarihler ve pratik bilgiler</p>
+            </div>
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-icon tyt">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h3>TYT (Temel Yeterlilik Testi)</h3>
+                    <ul class="info-list">
+                        <li><strong>Türkçe:</strong> 40 Soru</li>
+                        <li><strong>Matematik:</strong> 40 Soru</li>
+                        <li><strong>Fen Bilimleri:</strong> 20 Soru</li>
+                        <li><strong>Sosyal Bilimler:</strong> 20 Soru</li>
+                        <li><strong>Süre:</strong> 135 Dakika</li>
+                    </ul>
+                    <div class="info-badge">120 Toplam Soru</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-icon ayt">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>AYT (Alan Yeterlilik Testi)</h3>
+                    <ul class="info-list">
+                        <li><strong>Matematik:</strong> 40 Soru</li>
+                        <li><strong>Fen Bilimleri:</strong> 40 Soru</li>
+                        <li><strong>Sosyal Bilimler:</strong> 40 Soru</li>
+                        <li><strong>Süre:</strong> 180 Dakika</li>
+                    </ul>
+                    <div class="info-badge">Alan Seçimine Göre</div>
+                </div>
+            </div>
+            <div class="tips-section">
+                <h3><i class="fas fa-lightbulb"></i> Başarı İçin İpuçları</h3>
+                <div class="tips-grid">
+                    <div class="tip-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Düzenli çalışma programı oluştur</p>
+                    </div>
+                    <div class="tip-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Her gün mutlaka soru çöz</p>
+                    </div>
+                    <div class="tip-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Zayıf konularına odaklan</p>
+                    </div>
+                    <div class="tip-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Deneme sınavları çöz</p>
+                    </div>
+                    <div class="tip-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Performansını takip et</p>
+                    </div>
+                    <div class="tip-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Dinlenmeyi ihmal etme</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>Biz Kimiz?</h2>
+                    <p class="lead">
+                        <strong>YKS KAFA</strong>, Türkiye'nin en yenilikçi online YKS hazırlık platformudur. 
+                        2024 yılında kurulan ekibimiz, eğitim teknolojisini yapay zeka ile birleştirerek 
+                        öğrencilere en etkili öğrenme deneyimini sunmayı hedefliyor.
+                    </p>
+                    <div class="about-features">
+                        <div class="about-feature">
+                            <i class="fas fa-target"></i>
+                            <div>
+                                <h4>Misyonumuz</h4>
+                                <p>Her öğrenciye kaliteli ve erişilebilir YKS hazırlık imkanı sunmak.</p>
+                            </div>
+                        </div>
+                        <div class="about-feature">
+                            <i class="fas fa-eye"></i>
+                            <div>
+                                <h4>Vizyonumuz</h4>
+                                <p>Türkiye'nin en çok tercih edilen online eğitim platformu olmak.</p>
+                            </div>
+                        </div>
+                        <div class="about-feature">
+                            <i class="fas fa-heart"></i>
+                            <div>
+                                <h4>Değerlerimiz</h4>
+                                <p>Kalite, erişilebilirlik, yenilikçilik ve öğrenci odaklılık.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <div class="about-stats-card">
+                        <div class="stat-big">
+                            <i class="fas fa-users"></i>
+                            <h3>10,000+</h3>
+                            <p>Mutlu Öğrenci</p>
+                        </div>
+                        <div class="stat-big">
+                            <i class="fas fa-award"></i>
+                            <h3>%95</h3>
+                            <p>Başarı Oranı</p>
+                        </div>
+                        <div class="stat-big">
+                            <i class="fas fa-star"></i>
+                            <h3>4.8/5</h3>
+                            <p>Kullanıcı Puanı</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing-section-landing">
+        <div class="container">
+            <div class="section-header">
+                <h2>Size Uygun Planı Seçin</h2>
+                <p>15 gün süreyle 680 ücretsiz soru (her dersten 40 soru) ile başlayın, premium ile sınırsız erişim kazanın</p>
+            </div>
+            <div class="pricing-cards">
+                <div class="pricing-card-landing">
+                    <div class="plan-badge">Deneme</div>
+                    <h3>Ücretsiz</h3>
+                    <div class="price-landing">
+                        <span class="amount">0</span>
+                        <span class="currency">TL</span>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> 20 Soru Hakkı</li>
+                        <li><i class="fas fa-check"></i> TYT & AYT Erişimi</li>
+                        <li><i class="fas fa-check"></i> Temel Performans</li>
+                        <li><i class="fas fa-times"></i> Sınırsız Soru</li>
+                        <li><i class="fas fa-times"></i> Yapay Zeka Desteği</li>
+                    </ul>
+                    <a href="dashboard.html" class="btn btn-outline-landing">Hemen Başla</a>
+                </div>
+                <div class="pricing-card-landing popular">
+                    <div class="plan-badge">En Popüler</div>
+                    <h3>6 Aylık</h3>
+                    <div class="price-landing">
+                        <span class="amount">600</span>
+                        <span class="currency">TL</span>
+                    </div>
+                    <p class="save-text">900 TL yerine - %33 İndirim</p>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Sınırsız Soru</li>
+                        <li><i class="fas fa-check"></i> Tüm Dersler</li>
+                        <li><i class="fas fa-check"></i> Yapay Zeka Desteği</li>
+                        <li><i class="fas fa-check"></i> Detaylı Performans</li>
+                        <li><i class="fas fa-check"></i> Öncelikli Destek</li>
+                    </ul>
+                    <a href="pricing.html" class="btn btn-primary-landing">Satın Al</a>
+                </div>
+                <div class="pricing-card-landing">
+                    <div class="plan-badge best">En Avantajlı</div>
+                    <h3>Yıllık</h3>
+                    <div class="price-landing">
+                        <span class="amount">1000</span>
+                        <span class="currency">TL</span>
+                    </div>
+                    <p class="save-text">3000 TL yerine - %67 İndirim</p>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Sınırsız Soru</li>
+                        <li><i class="fas fa-check"></i> Tüm Özellikler</li>
+                        <li><i class="fas fa-check"></i> Yapay Zeka Desteği</li>
+                        <li><i class="fas fa-check"></i> 7/24 Destek</li>
+                        <li><i class="fas fa-check"></i> Özel Eğitmen</li>
+                    </ul>
+                    <a href="pricing.html" class="btn btn-primary-landing">Satın Al</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="faq-section-landing">
+        <div class="container">
+            <div class="section-header">
+                <h2>Sıkça Sorulan Sorular</h2>
+                <p>Aklına takılan soruların cevapları burada</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item-landing">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3>YKS KAFA nasıl çalışır?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Kayıt olduktan sonra 15 gün süreyle toplamda 680 ücretsiz soru hakkı ile başlıyorsun (TYT'den 320 + AYT'den 360 soru). Her dersten 40 soru çözme hakkın var. TYT veya AYT derslerinden birini seçip, konu ve zorluk seviyesini belirleyerek soru çözmeye başlayabilirsin. Her soruyu çözdükten sonra anında geri bildirim alırsın ve performansın otomatik olarak takip edilir.</p>
+                    </div>
+                </div>
+                <div class="faq-item-landing">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3>15 günlük ücretsiz deneme bitince ne olur?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Ücretsiz soru hakkın bittiğinde premium planlardan birine geçmen gerekir. Premium ile sınırsız soru çözme ve tüm özelliklere erişim hakkı kazanırsın.</p>
+                    </div>
+                </div>
+                <div class="faq-item-landing">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3>Ödeme güvenli mi?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Evet, tüm ödemeler 256-bit SSL şifreleme ile korunmaktadır. Kredi kartı bilgileriniz güvende tutulur ve saklanmaz.</p>
+                    </div>
+                </div>
+                <div class="faq-item-landing">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3>İptal ve iade politikası nedir?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>İlk 7 gün içinde %100 iade garantisi sunuyoruz. Memnun kalmazsan paranı geri alabilirsin, hiçbir soru sormadan.</p>
+                    </div>
+                </div>
+                <div class="faq-item-landing">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3>Mobil cihazlardan kullanabiliyor muyum?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Kesinlikle! Platform tamamen responsive tasarıma sahip. Bilgisayar, tablet veya telefonundan sorunsuz bir şekilde çalışabilirsin.</p>
+                    </div>
+                </div>
+                <div class="faq-item-landing">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3>Sorularım olursa kime sorabilirim?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>7/24 destek ekibimiz her zaman senin için burada. E-posta, canlı destek veya WhatsApp üzerinden bize ulaşabilirsin.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Başarıya Giden Yolda İlk Adımı At!</h2>
+                <p>15 gün süreyle 680 ücretsiz soru ile hemen başla. Kredi kartı bilgisi gerektirmez.</p>
+                <div class="cta-buttons">
+                    <a href="dashboard.html" class="btn btn-cta-primary">
+                        <i class="fas fa-rocket"></i> Ücretsiz Dene
+                    </a>
+                    <a href="pricing.html" class="btn btn-cta-secondary">
+                        <i class="fas fa-crown"></i> Premium'a Geç
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-landing">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-col">
+                    <div class="footer-brand">
+                        <i class="fas fa-brain"></i>
+                        <span>YKS <strong>KAFA</strong></span>
+                    </div>
+                    <p>Türkiye'nin en yenilikçi YKS hazırlık platformu. Yapay zeka destekli eğitim teknolojisi.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Hızlı Linkler</h4>
+                    <ul>
+                        <li><a href="#features">Özellikler</a></li>
+                        <li><a href="#about">Hakkımızda</a></li>
+                        <li><a href="#pricing">Fiyatlar</a></li>
+                        <li><a href="#faq">SSS</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Yasal</h4>
+                    <ul>
+                        <li><a href="kvkk.html">KVKK Aydınlatma Metni</a></li>
+                        <li><a href="gizlilik.html">Gizlilik ve Güvenlik</a></li>
+                        <li><a href="#faq">Sıkça Sorulan Sorular</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>İletişim</h4>
+                    <ul>
+                        <li><i class="fas fa-envelope"></i> info@ykskafa.com</li>
+                        <li><i class="fas fa-phone"></i> 0543 967 91 67</li>
+                        <li><i class="fas fa-map-marker-alt"></i> İstanbul, Türkiye</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 YKS KAFA. Tüm hakları saklıdır.</p>
+                <p>Yapay zeka destekli eğitim teknolojisi ile geliştirilmiştir.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-top" id="scrollTop" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- WhatsApp Button -->
+    <a href="https://api.whatsapp.com/send?phone=905439679167&text=Merhaba%2C%20YKS%20KAFA%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." class="whatsapp-button" target="_blank" rel="noopener noreferrer" title="WhatsApp ile direkt mesaj at">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="js/landing.js"></script>
+</body>
+</html>

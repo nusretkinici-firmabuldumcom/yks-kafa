@@ -1,0 +1,131 @@
+{
+  "name": "YKS KAFA - iyzico Ödeme [1] Checkout Form Başlat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "iyzico-start-payment",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "Webhook - Ödeme Başlat",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "Frontend'den çağrılır.\nPOST /webhook/iyzico-start-payment\nBody: { kullanici_id, email, ad, soyad, plan, ip }\nplan: 'premium_6ay' | 'premium_yillik'"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === PLAN VE KULLANICI BİLGİLERİ ===\nconst body = $input.first().json.body;\nconst { kullanici_id, email, ad, soyad, plan, ip, gsm } = body;\n\nif (!kullanici_id || !email || !ad || !plan) {\n  throw new Error('EKSIK_ALAN: kullanici_id, email, ad, plan zorunlu');\n}\n\nconst planlar = {\n  'premium_6ay':    { tutar: 600.0,  label: '6 Aylık Premium - YKS KAFA', ay: 6 },\n  'premium_yillik': { tutar: 1000.0, label: 'Yıllık Premium - YKS KAFA', ay: 12 }\n};\nif (!planlar[plan]) throw new Error('GECERSIZ_PLAN');\n\nconst secilen = planlar[plan];\nconst conversationId = 'ykskafa-' + kullanici_id + '-' + Date.now();\nconst basketId = 'basket-' + Date.now();\n\n// === iyzico HMAC-SHA256 Authorization Oluştur (IYZWSv2) ===\n// randomKey = timestamp + 9 haneli sayı\nconst randomKey = new Date().getTime().toString() + '123456789';\nconst apiKey    = $env.IYZICO_API_KEY;\nconst secretKey = $env.IYZICO_SECRET_KEY;\nconst uriPath   = '/payment/iyzipos/checkoutform/initialize/auth/ecom';\n\n// Payload: randomKey + uriPath + requestBody (henüz body oluşturulmadı, imza için placeholder)\n// NOT: iyzico imzası için body'yi önceden JSON stringify ederek oluşturuyoruz\nconst requestBody = {\n  locale: 'tr',\n  conversationId,\n  price: secilen.tutar.toFixed(2),\n  paidPrice: secilen.tutar.toFixed(2),\n  currency: 'TRY',\n  basketId,\n  paymentGroup: 'PRODUCT',\n  callbackUrl: $env.IYZICO_CALLBACK_URL,\n  enabledInstallments: [1, 2, 3],\n  buyer: {\n    id: kullanici_id,\n    name: ad,\n    surname: soyad || ad,\n    identityNumber: '11111111111',\n    email: email,\n    gsmNumber: gsm || '+905000000000',\n    registrationDate: '2024-01-01 00:00:00',\n    lastLoginDate: new Date().toISOString().replace('T', ' ').slice(0, 19),\n    registrationAddress: 'Istanbul',\n    city: 'Istanbul',\n    country: 'Turkey',\n    zipCode: '34000',\n    ip: ip || '85.34.78.112'\n  },\n  shippingAddress: {\n    contactName: ad + ' ' + (soyad || ''),\n    city: 'Istanbul',\n    country: 'Turkey',\n    address: 'Istanbul',\n    zipCode: '34000'\n  },\n  billingAddress: {\n    contactName: ad + ' ' + (soyad || ''),\n    city: 'Istanbul',\n    country: 'Turkey',\n    address: 'Istanbul',\n    zipCode: '34000'\n  },\n  basketItems: [\n    {\n      id: plan,\n      name: secilen.label,\n      category1: 'Eğitim',\n      itemType: 'VIRTUAL',\n      price: secilen.tutar.toFixed(2)\n    }\n  ]\n};\n\nconst bodyStr = JSON.stringify(requestBody);\nconst payload = randomKey + uriPath + bodyStr;\n\n// HMAC-SHA256 ile imzala (Node.js crypto - n8n'de require desteklenir)\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', secretKey).update(payload).digest('hex');\n\n// Base64 encode: \"apiKey:xxx&randomKey:xxx&signature:xxx\"\nconst authStr = 'apiKey:' + apiKey + '&randomKey:' + randomKey + '&signature:' + signature;\nconst base64Auth = Buffer.from(authStr).toString('base64');\nconst authHeader = 'IYZWSv2 ' + base64Auth;\n\nreturn [{ json: {\n  requestBody,\n  bodyStr,\n  authHeader,\n  conversationId,\n  basketId,\n  plan,\n  plan_label: secilen.label,\n  tutar: secilen.tutar,\n  ay: secilen.ay,\n  kullanici_id,\n  email,\n  ad,\n  soyad: soyad || ad\n}}];"
+      },
+      "id": "build-iyzico-auth",
+      "name": "iyzico Auth & Request Hazırla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.iyzipay.com/payment/iyzipos/checkoutform/initialize/auth/ecom",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ $json.authHeader }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "x-iyzi-rnd", "value": "={{ $json.requestBody.conversationId }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ $json.bodyStr }}"
+      },
+      "id": "call-iyzico-init",
+      "name": "iyzico Checkout Form Başlat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const iyzicoResp = $input.first().json;\nconst prev = $('iyzico Auth & Request Hazırla').first().json;\n\nif (iyzicoResp.status !== 'success') {\n  throw new Error('IYZICO_HATA: ' + iyzicoResp.errorMessage + ' (kod: ' + iyzicoResp.errorCode + ')');\n}\n\nreturn [{ json: {\n  token: iyzicoResp.token,\n  checkoutFormContent: iyzicoResp.checkoutFormContent,\n  paymentPageUrl: iyzicoResp.paymentPageUrl || null,\n  conversationId: prev.conversationId,\n  basketId: prev.basketId,\n  plan: prev.plan,\n  plan_label: prev.plan_label,\n  tutar: prev.tutar,\n  ay: prev.ay,\n  kullanici_id: prev.kullanici_id,\n  email: prev.email,\n  ad: prev.ad\n}}];"
+      },
+      "id": "parse-iyzico-response",
+      "name": "iyzico Yanıtını İşle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/odeme_oturumlari",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"kullanici_id\": \"{{ $json.kullanici_id }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"plan\": \"{{ $json.plan }}\",\n  \"tutar\": {{ $json.tutar }},\n  \"iyzico_token\": \"{{ $json.token }}\",\n  \"conversation_id\": \"{{ $json.conversationId }}\",\n  \"basket_id\": \"{{ $json.basketId }}\",\n  \"durum\": \"beklemede\",\n  \"olusturulma\": \"{{ new Date().toISOString() }}\"\n}"
+      },
+      "id": "save-session",
+      "name": "Ödeme Oturumunu Kaydet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"token\": \"{{ $('iyzico Yanıtını İşle').item.json.token }}\",\n  \"checkoutFormContent\": {{ JSON.stringify($('iyzico Yanıtını İşle').item.json.checkoutFormContent) }},\n  \"paymentPageUrl\": {{ JSON.stringify($('iyzico Yanıtını İşle').item.json.paymentPageUrl) }},\n  \"tutar\": {{ $('iyzico Yanıtını İşle').item.json.tutar }},\n  \"plan\": \"{{ $('iyzico Yanıtını İşle').item.json.plan_label }}\"\n}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "response-checkout",
+      "name": "Frontend'e Checkout Döndür",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.message }}\"\n}",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Hata Yanıtı",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 480]
+    }
+  ],
+  "connections": {
+    "Webhook - Ödeme Başlat": {
+      "main": [[{ "node": "iyzico Auth & Request Hazırla", "type": "main", "index": 0 }]]
+    },
+    "iyzico Auth & Request Hazırla": {
+      "main": [[{ "node": "iyzico Checkout Form Başlat", "type": "main", "index": 0 }]]
+    },
+    "iyzico Checkout Form Başlat": {
+      "main": [[{ "node": "iyzico Yanıtını İşle", "type": "main", "index": 0 }]]
+    },
+    "iyzico Yanıtını İşle": {
+      "main": [[{ "node": "Ödeme Oturumunu Kaydet", "type": "main", "index": 0 }]]
+    },
+    "Ödeme Oturumunu Kaydet": {
+      "main": [[{ "node": "Frontend'e Checkout Döndür", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA iyzico Adım 1: HMAC-SHA256 imzalı istek ile iyzico Checkout Form token'ı alır. Frontend bu token'ı kullanarak ödeme sayfasını render eder.",
+    "iyzicoEndpoint": "POST https://api.iyzipay.com/payment/iyzipos/checkoutform/initialize/auth/ecom",
+    "envVars": ["IYZICO_API_KEY", "IYZICO_SECRET_KEY", "IYZICO_CALLBACK_URL", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+  }
+}

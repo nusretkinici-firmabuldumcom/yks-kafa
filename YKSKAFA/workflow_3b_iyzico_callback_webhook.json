@@ -1,0 +1,365 @@
+{
+  "name": "YKS KAFA - iyzico Ödeme [2] Callback & Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "iyzico-callback",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-callback",
+      "name": "Webhook - iyzico Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 200],
+      "notes": "iyzico bu URL'i callbackUrl olarak çağırır (kullanıcı ödeme yaptıktan sonra).\nPOST /webhook/iyzico-callback\nBody: { token, status, paymentId, conversationId, mdStatus? }"
+    },
+    {
+      "parameters": {
+        "jsCode": "// iyzico callback'ten gelen token ile ödeme sonucunu sorgula\nconst body = $input.first().json.body;\nconst token = body.token;\nconst status = body.status;\n\nif (!token) throw new Error('TOKEN_EKSIK');\n\n// Callback'te status SUCCESS ise ödemeyi doğrula\nconst apiKey    = $env.IYZICO_API_KEY;\nconst secretKey = $env.IYZICO_SECRET_KEY;\nconst randomKey = new Date().getTime().toString() + '987654321';\nconst uriPath   = '/payment/iyzipos/checkoutform/auth/ecom/detail';\n\nconst reqBody = {\n  locale: 'tr',\n  conversationId: body.conversationId || 'retrieve-' + Date.now(),\n  token: token\n};\nconst bodyStr = JSON.stringify(reqBody);\nconst payload = randomKey + uriPath + bodyStr;\n\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', secretKey).update(payload).digest('hex');\nconst authStr = 'apiKey:' + apiKey + '&randomKey:' + randomKey + '&signature:' + signature;\nconst base64Auth = Buffer.from(authStr).toString('base64');\n\nreturn [{ json: {\n  token,\n  callbackStatus: status,\n  authHeader: 'IYZWSv2 ' + base64Auth,\n  bodyStr,\n  conversationId: body.conversationId\n}}];"
+      },
+      "id": "prepare-retrieve",
+      "name": "Retrieve İsteği Hazırla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.iyzipay.com/payment/iyzipos/checkoutform/auth/ecom/detail",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ $json.authHeader }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ $json.bodyStr }}"
+      },
+      "id": "retrieve-payment",
+      "name": "iyzico Ödeme Sorgula (Retrieve)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconst prevToken = $('Retrieve İsteği Hazırla').first().json.token;\n\n// Ödeme başarılı mı?\nconst odemeBasarili = result.status === 'success' && result.paymentStatus === 'SUCCESS';\n\nreturn [{ json: {\n  odemeBasarili,\n  paymentId: result.paymentId,\n  paymentStatus: result.paymentStatus,\n  paidPrice: result.paidPrice,\n  currency: result.currency,\n  basketId: result.basketId,\n  conversationId: result.conversationId,\n  token: prevToken,\n  iyzicoStatus: result.status,\n  errorMessage: result.errorMessage || null,\n  errorCode: result.errorCode || null\n}}];"
+      },
+      "id": "check-payment-result",
+      "name": "Ödeme Sonucunu Kontrol Et",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "is-success",
+              "leftValue": "={{ $json.odemeBasarili }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ]
+        }
+      },
+      "id": "route-success",
+      "name": "Ödeme Başarılı mı?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/odeme_oturumlari?iyzico_token=eq.{{ $json.token }}&select=kullanici_id,email,plan,tutar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" }
+          ]
+        }
+      },
+      "id": "get-session-data",
+      "name": "Oturum Verisini Al",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "const sessions = $input.first().json;\nif (!sessions || sessions.length === 0) {\n  throw new Error('OTURUM_BULUNAMADI');\n}\nconst session = sessions[0];\n\nconst planAy = session.plan === 'premium_yillik' ? 12 : 6;\nconst bitis = new Date();\nbitis.setMonth(bitis.getMonth() + planAy);\n\nconst odemeDetay = $('Ödeme Sonucunu Kontrol Et').first().json;\n\nreturn [{ json: {\n  kullanici_id: session.kullanici_id,\n  email: session.email,\n  plan: session.plan,\n  tutar: odedeDetay.paidPrice || session.tutar,\n  paymentId: odedeDetay.paymentId,\n  abonelik_bitis: bitis.toISOString(),\n  onay_tarihi: new Date().toISOString()\n}}];\n\nfunction odedeDetay() {} // scope fix\n"
+      },
+      "id": "build-activation",
+      "name": "Aktivasyon Verisi Hazırla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 120],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const sessions = $input.first().json;\nif (!sessions || sessions.length === 0) {\n  throw new Error('OTURUM_BULUNAMADI');\n}\nconst session = sessions[0];\nconst odemedeten = $('Ödeme Sonucunu Kontrol Et').first().json;\n\nconst planAy = session.plan === 'premium_yillik' ? 12 : 6;\nconst bitis = new Date();\nbitis.setMonth(bitis.getMonth() + planAy);\n\nreturn [{ json: {\n  kullanici_id: session.kullanici_id,\n  email: session.email,\n  plan: session.plan,\n  tutar: odemedeten.paidPrice || session.tutar,\n  paymentId: odemedeten.paymentId,\n  abonelik_bitis: bitis.toISOString(),\n  onay_tarihi: new Date().toISOString()\n}}];"
+      },
+      "id": "build-activation-fixed",
+      "name": "Aktivasyon Verisi Hazırla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 120]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/kullanicilar?id=eq.{{ $json.kullanici_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"plan\": \"{{ $json.plan }}\",\n  \"abonelik_bitis\": \"{{ $json.abonelik_bitis }}\",\n  \"kalan_soru_hakki\": -1,\n  \"aktif\": true,\n  \"iyzico_payment_id\": \"{{ $json.paymentId }}\",\n  \"guncelleme_tarihi\": \"{{ $json.onay_tarihi }}\"\n}"
+      },
+      "id": "activate-premium",
+      "name": "Kullanıcıyı Premium'a Yükselt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 120]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/odeme_oturumlari?iyzico_token=eq.{{ $('Retrieve İsteği Hazırla').item.json.token }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"durum\": \"basarili\",\n  \"iyzico_payment_id\": \"{{ $('Aktivasyon Verisi Hazırla').item.json.paymentId }}\",\n  \"tamamlanma\": \"{{ new Date().toISOString() }}\"\n}"
+      },
+      "id": "update-session-success",
+      "name": "Oturumu Başarılı Güncelle",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 120]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ykskafa.com",
+        "toEmail": "={{ $('Aktivasyon Verisi Hazırla').item.json.email }}",
+        "subject": "🎉 YKS KAFA Premium Aktif! Ödemen Alındı",
+        "emailType": "html",
+        "message": "=<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;\">\n  <div style=\"background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 40px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0;\">🎉 Ödemen Alındı!</h1>\n    <p style=\"color: #e0e7ff;\">YKS KAFA Premium artık aktif</p>\n  </div>\n  <div style=\"padding: 30px; background: white; margin: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);\">\n    <h2 style=\"margin-top:0; color: #1f2937;\">Premium hesabın hazır! 🚀</h2>\n    <div style=\"background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; padding: 20px; margin: 20px 0;\">\n      <table style=\"width: 100%;\">\n        <tr><td style=\"color:#555; padding:4px 0;\"><strong>Plan:</strong></td><td>{{ $('Aktivasyon Verisi Hazırla').item.json.plan === 'premium_yillik' ? 'Yıllık Premium' : '6 Aylık Premium' }}</td></tr>\n        <tr><td style=\"color:#555; padding:4px 0;\"><strong>Tutar:</strong></td><td style=\"font-weight:bold;\">{{ $('Aktivasyon Verisi Hazırla').item.json.tutar }} TL</td></tr>\n        <tr><td style=\"color:#555; padding:4px 0;\"><strong>Ödeme No:</strong></td><td style=\"font-family:monospace;\">{{ $('Aktivasyon Verisi Hazırla').item.json.paymentId }}</td></tr>\n        <tr><td style=\"color:#555; padding:4px 0;\"><strong>Geçerlilik:</strong></td><td>{{ new Date($('Aktivasyon Verisi Hazırla').item.json.abonelik_bitis).toLocaleDateString('tr-TR') }} tarihine kadar</td></tr>\n      </table>\n    </div>\n    <div style=\"background: #f0f0ff; border-radius: 8px; padding: 15px; margin: 15px 0;\">\n      <h3 style=\"color: #6366f1; margin-top: 0;\">Premium Avantajların:</h3>\n      <p>✅ Sınırsız soru çözme &nbsp; ✅ GPT-4o yapay zeka desteği</p>\n      <p>✅ Detaylı performans analizi &nbsp; ✅ Tüm TYT & AYT dersleri</p>\n    </div>\n    <div style=\"text-align: center; margin: 25px 0;\">\n      <a href=\"https://ykskafa.com/dashboard\" style=\"background: #6366f1; color: white; padding: 15px 35px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;\">Hemen Başla →</a>\n    </div>\n    <hr style=\"border:none; border-top:1px solid #eee;\">\n    <p style=\"color:#999; font-size:12px; text-align:center;\">info@ykskafa.com | 0543 967 91 67 | iyzico güvencesiyle ödendi</p>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-success-email",
+      "name": "Başarı E-postası Gönder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2200, 120]
+    },
+    {
+      "parameters": {
+        "respondWith": "html",
+        "responseBody": "<html><head><meta http-equiv='refresh' content='3;url=https://ykskafa.com/odeme-basarili'></head><body style='font-family:Arial;text-align:center;padding:60px;background:#f8f9fa;'><div style='background:white;padding:40px;border-radius:12px;display:inline-block;box-shadow:0 2px 12px rgba(0,0,0,0.1);'><div style='font-size:60px;'>✅</div><h1 style='color:#6366f1;'>Ödeme Başarılı!</h1><p>Premium hesabın aktif edildi. Yönlendiriliyorsun...</p></div></body></html>",
+        "options": { "responseCode": 200 }
+      },
+      "id": "redirect-success",
+      "name": "Başarı Sayfasına Yönlendir",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2400, 120]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/odeme_oturumlari?iyzico_token=eq.{{ $('Retrieve İsteği Hazırla').item.json.token }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"durum\": \"basarisiz\",\n  \"hata\": \"{{ $('Ödeme Sonucunu Kontrol Et').item.json.errorMessage }}\",\n  \"tamamlanma\": \"{{ new Date().toISOString() }}\"\n}"
+      },
+      "id": "update-session-fail",
+      "name": "Oturumu Başarısız Güncelle",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 320]
+    },
+    {
+      "parameters": {
+        "respondWith": "html",
+        "responseBody": "<html><head><meta http-equiv='refresh' content='3;url=https://ykskafa.com/odeme-basarisiz'></head><body style='font-family:Arial;text-align:center;padding:60px;background:#f8f9fa;'><div style='background:white;padding:40px;border-radius:12px;display:inline-block;'><div style='font-size:60px;'>❌</div><h1 style='color:#ef4444;'>Ödeme Başarısız</h1><p>Lütfen tekrar deneyin veya destek ekibimizle iletişime geçin.</p></div></body></html>",
+        "options": { "responseCode": 200 }
+      },
+      "id": "redirect-fail",
+      "name": "Başarısız Sayfasına Yönlendir",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 320]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "iyzico-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-iyzico-notif",
+      "name": "Webhook - iyzico Bildirim",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 560],
+      "notes": "iyzico Merchant Portal > Settings > Merchant Notifications'a bu URL'i ekle.\nPOST /webhook/iyzico-webhook\nBody: { paymentId, status, iyziEventType, token, paymentConversationId, merchantId, iyziReferenceCode }"
+    },
+    {
+      "parameters": {
+        "jsCode": "// iyzico X-IYZ-SIGNATURE-V3 doğrulama\nconst headers = $input.first().json.headers;\nconst body = $input.first().json.body;\nconst signatureV3 = headers['x-iyz-signature-v3'] || headers['X-Iyz-Signature-V3'];\n\nconst secretKey = $env.IYZICO_SECRET_KEY;\n\nif (signatureV3) {\n  const crypto = require('crypto');\n  // HPP format: secretKey + iyziEventType + iyziPaymentId + token + paymentConversationId + status\n  const key = secretKey + body.iyziEventType + body.iyziPaymentId + (body.token || '') + (body.paymentConversationId || '') + body.status;\n  const computed = crypto.createHmac('sha256', secretKey).update(key).digest('hex');\n  \n  if (computed !== signatureV3) {\n    throw new Error('WEBHOOK_IMZA_GECERSIZ: İmza doğrulaması başarısız');\n  }\n}\n\nreturn [{ json: {\n  paymentId: body.paymentId || body.iyziPaymentId,\n  status: body.status,\n  iyziEventType: body.iyziEventType,\n  token: body.token,\n  conversationId: body.paymentConversationId,\n  merchantId: body.merchantId,\n  imzaDogrulandi: !!signatureV3\n}}];"
+      },
+      "id": "verify-webhook-signature",
+      "name": "Webhook İmzasını Doğrula",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 560]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "webhook-success",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "SUCCESS",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "check-webhook-status",
+      "name": "Webhook Status Kontrol",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 560]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/odeme_oturumlari?iyzico_token=eq.{{ $json.token }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"durum\": \"webhook_onaylandi\",\n  \"iyzico_payment_id\": \"{{ $json.paymentId }}\",\n  \"webhook_tarihi\": \"{{ new Date().toISOString() }}\"\n}"
+      },
+      "id": "webhook-confirm-db",
+      "name": "Webhook Onayını Kaydet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 480]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"received\": true }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "webhook-ack",
+      "name": "iyzico ACK (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 560]
+    }
+  ],
+  "connections": {
+    "Webhook - iyzico Callback": {
+      "main": [[{ "node": "Retrieve İsteği Hazırla", "type": "main", "index": 0 }]]
+    },
+    "Retrieve İsteği Hazırla": {
+      "main": [[{ "node": "iyzico Ödeme Sorgula (Retrieve)", "type": "main", "index": 0 }]]
+    },
+    "iyzico Ödeme Sorgula (Retrieve)": {
+      "main": [[{ "node": "Ödeme Sonucunu Kontrol Et", "type": "main", "index": 0 }]]
+    },
+    "Ödeme Sonucunu Kontrol Et": {
+      "main": [[{ "node": "Ödeme Başarılı mı?", "type": "main", "index": 0 }]]
+    },
+    "Ödeme Başarılı mı?": {
+      "main": [
+        [{ "node": "Oturum Verisini Al", "type": "main", "index": 0 }],
+        [{ "node": "Oturumu Başarısız Güncelle", "type": "main", "index": 0 }]
+      ]
+    },
+    "Oturum Verisini Al": {
+      "main": [[{ "node": "Aktivasyon Verisi Hazırla", "type": "main", "index": 0 }]]
+    },
+    "Aktivasyon Verisi Hazırla": {
+      "main": [[{ "node": "Kullanıcıyı Premium'a Yükselt", "type": "main", "index": 0 }]]
+    },
+    "Kullanıcıyı Premium'a Yükselt": {
+      "main": [[{ "node": "Oturumu Başarılı Güncelle", "type": "main", "index": 0 }]]
+    },
+    "Oturumu Başarılı Güncelle": {
+      "main": [[{ "node": "Başarı E-postası Gönder", "type": "main", "index": 0 }]]
+    },
+    "Başarı E-postası Gönder": {
+      "main": [[{ "node": "Başarı Sayfasına Yönlendir", "type": "main", "index": 0 }]]
+    },
+    "Oturumu Başarısız Güncelle": {
+      "main": [[{ "node": "Başarısız Sayfasına Yönlendir", "type": "main", "index": 0 }]]
+    },
+    "Webhook - iyzico Bildirim": {
+      "main": [[{ "node": "Webhook İmzasını Doğrula", "type": "main", "index": 0 }]]
+    },
+    "Webhook İmzasını Doğrula": {
+      "main": [[{ "node": "Webhook Status Kontrol", "type": "main", "index": 0 }]]
+    },
+    "Webhook Status Kontrol": {
+      "main": [
+        [{ "node": "Webhook Onayını Kaydet", "type": "main", "index": 0 }],
+        [{ "node": "iyzico ACK (200)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Webhook Onayını Kaydet": {
+      "main": [[{ "node": "iyzico ACK (200)", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA iyzico Adım 2: Callback ile ödeme retrieve, X-IYZ-SIGNATURE-V3 doğrulama, premium aktivasyon ve e-posta bildirimi.",
+    "iyzicoEndpoints": [
+      "POST https://api.iyzipay.com/payment/iyzipos/checkoutform/auth/ecom/detail  (retrieve)",
+      "iyzico Merchant Portal > Settings > Merchant Notifications → /webhook/iyzico-webhook"
+    ],
+    "envVars": ["IYZICO_API_KEY", "IYZICO_SECRET_KEY", "IYZICO_CALLBACK_URL", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+  }
+}

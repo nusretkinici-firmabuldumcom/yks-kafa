@@ -1,0 +1,153 @@
+{
+  "name": "YKS KAFA - Öğren: Not/PDF'ten Flashcard + Quiz Üretici",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ogren-uret",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Öğren Talebi",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "ykskafa-ogren-uret",
+      "notes": "POST /webhook/ogren-uret\nBody: { metin, ders, kart_sayisi, kullanici_id }"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "id": "check-metin",
+              "leftValue": "={{ $json.body.metin }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "validate-input",
+      "name": "Girdi Doğrulama",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.OPENAI_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "model", "value": "gpt-4o" },
+            { "name": "response_format", "value": "={ \"type\": \"json_object\" }" },
+            {
+              "name": "messages",
+              "value": "=[\n  {\n    \"role\": \"system\",\n    \"content\": \"Sen bir YKS çalışma materyali üreticisisin. Öğrencinin verdiği not/konu metnini alıp: kısa bir özet, bilgi kartları (flashcard) ve mini bir çoktan seçmeli quiz üretiyorsun. Her zaman geçerli JSON döndür.\"\n  },\n  {\n    \"role\": \"user\",\n    \"content\": \"Aşağıdaki metinden bir öğrenme seti üret.\\n\\nDers: {{ $json.body.ders || 'Otomatik algıla' }}\\nİstenen kart sayısı: {{ $json.body.kart_sayisi || 8 }}\\n\\nMetin:\\n{{ $json.body.metin }}\\n\\nJSON formatında yanıt ver:\\n{\\n  \\\"ders\\\": \\\"...\\\",\\n  \\\"konu\\\": \\\"kısa başlık\\\",\\n  \\\"summary\\\": [\\\"özet madde 1\\\", \\\"özet madde 2\\\", \\\"...\\\"],\\n  \\\"cards\\\": [ { \\\"front\\\": \\\"soru/kavram\\\", \\\"back\\\": \\\"cevap/açıklama\\\" } ],\\n  \\\"quiz\\\": [ { \\\"q\\\": \\\"...\\\", \\\"opts\\\": [\\\"A\\\",\\\"B\\\",\\\"C\\\",\\\"D\\\"], \\\"correct\\\": 0, \\\"explain\\\": \\\"...\\\" } ]\\n}\\n\\nEn az 3 quiz sorusu üret. cards dizisinde tam olarak istenen kadar öğe olsun.\"\n  }\n]"
+            },
+            { "name": "max_tokens", "value": "1800" },
+            { "name": "temperature", "value": "0.5" }
+          ]
+        }
+      },
+      "id": "openai-generate",
+      "name": "GPT-4o Set Üret",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices[0].message.content;\nlet set;\ntry {\n  set = JSON.parse(content);\n} catch(e) {\n  throw new Error('GPT yanıtı JSON parse edilemedi: ' + content);\n}\n\nconst kullanici_id = $('Webhook - Öğren Talebi').first().json.body.kullanici_id;\n\nreturn [{\n  json: {\n    ders: set.ders,\n    konu: set.konu,\n    summary: set.summary,\n    cards: set.cards,\n    quiz: set.quiz,\n    kullanici_id: kullanici_id,\n    olusturulma_tarihi: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-set",
+      "name": "Seti İşle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/kutuphane_ogren_setleri",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"kullanici_id\": {{ $json.kullanici_id ? '\"' + $json.kullanici_id + '\"' : null }},\n  \"ders\": \"{{ $json.ders }}\",\n  \"konu\": \"{{ $json.konu }}\",\n  \"ozet\": {{ JSON.stringify($json.summary) }},\n  \"kartlar\": {{ JSON.stringify($json.cards) }},\n  \"quiz\": {{ JSON.stringify($json.quiz) }},\n  \"olusturulma_tarihi\": \"{{ $json.olusturulma_tarihi }}\"\n}"
+      },
+      "id": "save-to-supabase",
+      "name": "Supabase'e Kaydet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"ders\": \"{{ $('Seti İşle').item.json.ders }}\",\n  \"konu\": \"{{ $('Seti İşle').item.json.konu }}\",\n  \"summary\": {{ JSON.stringify($('Seti İşle').item.json.summary) }},\n  \"cards\": {{ JSON.stringify($('Seti İşle').item.json.cards) }},\n  \"quiz\": {{ JSON.stringify($('Seti İşle').item.json.quiz) }}\n}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "success-response",
+      "name": "Başarılı Yanıt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": false, \"error\": \"Kaynak metin gerekli\" }",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Hata Yanıtı",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 420]
+    }
+  ],
+  "connections": {
+    "Webhook - Öğren Talebi": {
+      "main": [[{ "node": "Girdi Doğrulama", "type": "main", "index": 0 }]]
+    },
+    "Girdi Doğrulama": {
+      "main": [
+        [{ "node": "GPT-4o Set Üret", "type": "main", "index": 0 }],
+        [{ "node": "Hata Yanıtı", "type": "main", "index": 0 }]
+      ]
+    },
+    "GPT-4o Set Üret": {
+      "main": [[{ "node": "Seti İşle", "type": "main", "index": 0 }]]
+    },
+    "Seti İşle": {
+      "main": [[{ "node": "Supabase'e Kaydet", "type": "main", "index": 0 }]]
+    },
+    "Supabase'e Kaydet": {
+      "main": [[{ "node": "Başarılı Yanıt", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA - Solvi'nin 'Learn' sayfasına karşılık gelen özellik: not/PDF metnini özet + flashcard + mini quiz setine çevirir, Supabase'e kaydeder. Frontend: ykskafa_ogren.html",
+    "envVars": ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+  }
+}

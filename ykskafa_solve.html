@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Fotoğrafla Çöz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--surface:#0e0e1a;--surface2:#13131f;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0ff;--muted:#8b89a8;--accent:#c8f53c;--accent2:#7c6af7;--accent3:#f53c7a;--success:#3cf58a;--warn:#f5a23c;--nav-bg:rgba(8,8,16,.9);--overlay-bg:rgba(8,8,16,.7);--syne:'Syne',sans-serif;--dm:'DM Sans',sans-serif}
+[data-theme="light"]{--bg:#f4f3fa;--surface:#ffffff;--surface2:#f0eefa;--border:rgba(20,16,40,0.08);--border2:rgba(20,16,40,0.14);--text:#161426;--muted:#6b6885;--nav-bg:rgba(255,255,255,.85);--overlay-bg:rgba(244,243,250,.85)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--dm);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s ease,color .25s ease}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,106,247,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(124,106,247,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+
+/* ── TOP NAV ── */
+.topnav{position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px}
+.nav-left{display:flex;align-items:center;gap:20px}
+.logo{font-family:var(--syne);font-size:18px;font-weight:800;letter-spacing:-1px;text-decoration:none;color:var(--text)}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-links a{font-size:13px;color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:2px;transition:all .2s}
+.nav-links a:hover{color:var(--text);background:rgba(124,106,247,.08)}
+.nav-links a.active{color:var(--accent2);background:rgba(124,106,247,.1)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.theme-toggle{width:34px;height:34px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent2)}
+.nav-streak{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:5px 12px}
+.nav-streak span{color:var(--accent);font-family:var(--syne);font-weight:700}
+
+/* ── MAIN LAYOUT ── */
+.main{position:relative;z-index:1;max-width:1180px;margin:0 auto;width:100%;padding:32px 28px;display:grid;grid-template-columns:1fr 320px;gap:24px}
+@media(max-width:960px){.main{grid-template-columns:1fr}.right-col{display:none}}
+
+.page-head{grid-column:1/-1;margin-bottom:4px}
+.page-title{font-family:var(--syne);font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.page-desc{font-size:14px;color:var(--muted);font-weight:300}
+
+/* ── INPUT CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);padding:24px}
+.card-title{font-family:var(--syne);font-size:13px;font-weight:800;letter-spacing:-.2px;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;margin-bottom:14px}
+
+.mode-tabs{display:flex;gap:8px;margin-bottom:18px}
+.mode-tab{flex:1;padding:11px;text-align:center;font-size:13px;font-weight:500;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.mode-tab.active{border-color:var(--accent2);color:var(--accent2);background:rgba(124,106,247,.07)}
+
+.dropzone{border:1.5px dashed var(--border2);padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent2);background:rgba(124,106,247,.04)}
+.dropzone-icon{font-size:30px;margin-bottom:10px}
+.dropzone-title{font-size:14px;font-weight:500;margin-bottom:4px}
+.dropzone-sub{font-size:12px;color:var(--muted);font-weight:300}
+.dropzone input{display:none}
+.preview-wrap{display:none;position:relative}
+.preview-wrap.show{display:block}
+.preview-img{width:100%;max-height:280px;object-fit:contain;background:var(--surface2);border:1px solid var(--border)}
+.preview-remove{position:absolute;top:10px;right:10px;width:28px;height:28px;background:rgba(8,8,16,.7);border:1px solid var(--border2);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+
+.text-input-wrap{display:none}
+.text-input-wrap.show{display:block}
+.q-textarea{width:100%;min-height:120px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--dm);font-size:14px;font-weight:300;padding:14px 16px;resize:vertical;outline:none}
+.q-textarea:focus{border-color:var(--accent2)}
+.q-textarea::placeholder{color:var(--muted);opacity:.7}
+
+.subject-chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.chip{font-size:12px;padding:6px 14px;border:1px solid var(--border2);color:var(--muted);cursor:pointer;transition:all .2s}
+.chip.active{border-color:var(--accent2);color:var(--accent2);background:rgba(124,106,247,.08)}
+
+.btn-solve{width:100%;background:var(--accent2);color:#fff;font-family:var(--dm);font-size:14px;font-weight:500;padding:14px;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.btn-solve:hover{opacity:.9}
+.btn-solve:disabled{opacity:.4;pointer-events:none}
+.btn-solve.loading .btn-txt::after{content:'AI çözüyor...'}
+.btn-solve .btn-txt::after{content:'Çöz →'}
+.btn-solve.loading .btn-txt::after{content:'AI çözüyor...'}
+
+/* ── SOLUTION "VIDEO" PLAYER ── */
+.solution-wrap{display:none;margin-top:20px;animation:fadeIn .4s ease}
+.solution-wrap.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.player{background:var(--surface2);border:1px solid rgba(124,106,247,.2);overflow:hidden}
+.player-stage{padding:28px 30px;min-height:140px;display:flex;align-items:center}
+.step-text{font-size:16px;line-height:1.8;font-weight:300;color:var(--text)}
+.step-text strong{color:var(--accent2);font-weight:500}
+.step-text .hl{color:var(--accent);font-weight:400}
+.player-controls{display:flex;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--border);background:var(--surface)}
+.pc-btn{width:32px;height:32px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all .2s}
+.pc-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.pc-btn.voice-off{color:var(--muted);border-color:var(--border2)}
+.pc-scrub{flex:1;display:flex;gap:3px}
+.pc-seg{flex:1;height:5px;background:var(--border2);cursor:pointer;position:relative;overflow:hidden}
+.pc-seg-fill{position:absolute;inset:0;background:var(--accent);width:0%;transition:width .1s linear}
+.pc-seg.done .pc-seg-fill{width:100%}
+.pc-label{font-size:11px;color:var(--muted);white-space:nowrap;font-family:var(--syne);font-weight:700}
+
+.solution-final{padding:18px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.final-answer{font-size:13px;color:var(--muted)}
+.final-answer strong{color:var(--success);font-family:var(--syne)}
+.solution-actions{display:flex;gap:8px}
+.btn-save{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:12px;padding:8px 14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-save:hover{border-color:var(--accent);color:var(--accent)}
+.btn-save.saved{border-color:var(--accent);color:var(--accent);background:rgba(200,245,60,.08)}
+.tags-row{display:flex;gap:6px;flex-wrap:wrap;padding:0 22px 18px}
+.tag{font-size:10px;padding:3px 9px;border:1px solid var(--border2);color:var(--muted)}
+
+/* ── AI CHAT ── */
+.chat-card{margin-top:20px;background:var(--surface);border:1px solid var(--border);display:none}
+.chat-card.show{display:block}
+.chat-header{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.chat-icon{width:26px;height:26px;background:rgba(124,106,247,.15);border:1px solid rgba(124,106,247,.3);display:flex;align-items:center;justify-content:center;font-size:13px}
+.chat-title{font-family:var(--syne);font-size:13px;font-weight:800;color:var(--accent2)}
+.chat-sub{font-size:11px;color:var(--muted);margin-left:auto}
+.chat-body{max-height:320px;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:82%;font-size:13px;line-height:1.65;font-weight:300;padding:11px 15px}
+.msg.user{align-self:flex-end;background:rgba(124,106,247,.12);color:var(--text);border:1px solid rgba(124,106,247,.25)}
+.msg.ai{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.msg.ai strong{color:var(--accent2)}
+.chat-input-row{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--border)}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--dm);font-size:13px;padding:10px 14px;outline:none}
+.chat-input:focus{border-color:var(--accent2)}
+.chat-send{background:var(--accent2);color:#fff;border:none;padding:10px 18px;font-size:13px;cursor:pointer;transition:all .2s}
+.chat-send:hover{opacity:.9}
+
+/* ── RIGHT COLUMN ── */
+.right-col{display:flex;flex-direction:column;gap:16px}
+.info-card{background:rgba(124,106,247,.06);border:1px solid rgba(124,106,247,.18);padding:20px}
+.info-title{font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:10px}
+.info-text{font-size:13px;color:var(--muted);line-height:1.7;font-weight:300}
+.recent-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer}
+.recent-item:last-child{border-bottom:none}
+.recent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.recent-txt{flex:1;color:var(--muted);font-weight:300}
+.recent-txt strong{color:var(--text);font-weight:400}
+
+/* Loading spinner dots */
+.spin-dots{display:inline-flex;gap:4px}
+.spin-dots span{width:5px;height:5px;background:#fff;border-radius:50%;animation:spinDot 1s infinite ease-in-out}
+.spin-dots span:nth-child(2){animation-delay:.15s}
+.spin-dots span:nth-child(3){animation-delay:.3s}
+@keyframes spinDot{0%,80%,100%{opacity:.25;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
+
+@media(max-width:600px){.main{padding:20px 16px}.nav-links{display:none}}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-left">
+    <a href="web%20sayfa/index.html" class="logo">YKS<span>KAFA</span></a>
+    <div class="nav-links">
+      <a href="ykskafa_dashboard.html">Dashboard</a>
+      <a href="ykskafa_quiz.html">Soru Çöz</a>
+      <a href="ykskafa_solve.html" class="active">Fotoğrafla Çöz</a>
+      <a href="ykskafa_ogren.html">Öğren</a>
+      <a href="ykskafa_kutuphane.html">Kütüphane</a>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-streak">🔥 Seri: <span>7</span> gün</div>
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Tema değiştir">🌙</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-head">
+    <div class="page-title">📷 Fotoğrafla Çöz</div>
+    <div class="page-desc">Bir sorunun fotoğrafını çek ya da yapıştır — AI adım adım, sesli anlatımlı çözüm hazırlasın. Anlamadığın bir adım olursa hemen sor.</div>
+  </div>
+
+  <!-- LEFT -->
+  <div>
+    <div class="card">
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-photo" onclick="setMode('photo')">📷 Fotoğraf Yükle</button>
+        <button class="mode-tab" id="tab-text" onclick="setMode('text')">✍️ Soruyu Yaz</button>
+      </div>
+
+      <!-- Photo dropzone -->
+      <div id="photo-mode">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+          <div class="dropzone-icon">📸</div>
+          <div class="dropzone-title">Soru fotoğrafını buraya sürükle ya da tıkla</div>
+          <div class="dropzone-sub">JPG, PNG · Telefon kamerasından da yükleyebilirsin</div>
+          <input type="file" id="file-input" accept="image/*" capture="environment">
+        </div>
+        <div class="preview-wrap" id="preview-wrap">
+          <img class="preview-img" id="preview-img" alt="Yüklenen soru">
+          <button class="preview-remove" onclick="removePreview(event)">✕</button>
+        </div>
+      </div>
+
+      <!-- Text mode -->
+      <div class="text-input-wrap" id="text-mode">
+        <textarea class="q-textarea" id="q-textarea" placeholder="Soruyu buraya yaz veya yapıştır... örn: x² − 5x + 6 = 0 denkleminin kökler toplamı kaçtır?"></textarea>
+      </div>
+
+      <div class="subject-chips" id="subject-chips"></div>
+
+      <button class="btn-solve" id="btn-solve" onclick="solveQuestion()">
+        <span class="btn-txt"></span>
+      </button>
+    </div>
+
+    <!-- SOLUTION PLAYER -->
+    <div class="solution-wrap" id="solution-wrap">
+      <div class="player">
+        <div class="player-stage" id="player-stage">
+          <div class="step-text" id="step-text"></div>
+        </div>
+        <div class="player-controls">
+          <button class="pc-btn" id="btn-play" onclick="togglePlay()" title="Oynat/Duraklat">▶</button>
+          <div class="pc-scrub" id="pc-scrub"></div>
+          <span class="pc-label" id="pc-label">1/4</span>
+          <button class="pc-btn" id="btn-voice" onclick="toggleVoice()" title="Sesli anlatım">🔊</button>
+        </div>
+        <div class="tags-row" id="tags-row"></div>
+        <div class="solution-final">
+          <div class="final-answer">Doğru cevap: <strong id="final-answer">—</strong></div>
+          <div class="solution-actions">
+            <button class="btn-save" id="btn-save" onclick="saveToLibrary()">☆ Kütüphaneye Kaydet</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI CHAT -->
+    <div class="chat-card" id="chat-card">
+      <div class="chat-header">
+        <div class="chat-icon">💬</div>
+        <div class="chat-title">Anlamadın mı? Sor.</div>
+        <div class="chat-sub">7/24 AI öğretmen</div>
+      </div>
+      <div class="chat-body" id="chat-body"></div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Bu adımı neden böyle yaptık?" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">Gönder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-col">
+    <div class="info-card">
+      <div class="info-title">Nasıl çalışır?</div>
+      <div class="info-text">1. Soruyu fotoğrafla ya da yaz<br>2. AI dersi tanır, adım adım video gibi anlatır<br>3. Sesli anlatımı dinle, istersen atla<br>4. Anlamadığın yeri sohbetten sor<br>5. Beğendiğini kütüphanene kaydet</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Son Çözülenler</div>
+      <div id="recent-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="konu_listesi.js"></script>
+<script>
+// ── REAL TYT/AYT DERS LİSTESİ (kaynak: konu_listesi.js) ──
+function renderSubjectChips(){
+  const el = document.getElementById('subject-chips');
+  const dersler = ['Otomatik', ...ykskafaTumDersler()];
+  el.innerHTML = dersler.map((d,i) => `<div class="chip${i===0?' active':''}" data-s="${d}" onclick="selectChip(this,'${d}')">${d==='Otomatik'?'Otomatik Algıla':d}</div>`).join('');
+}
+function selectChip(el, subject){
+  document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  selectedSubject = subject;
+}
+renderSubjectChips();
+
+// ── THEME ──
+(function(){
+  const saved = localStorage.getItem('ykskafa-theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+function toggleTheme(){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('ykskafa-theme','dark'); document.getElementById('theme-btn').textContent='🌙'; }
+  else { document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('ykskafa-theme','light'); document.getElementById('theme-btn').textContent='☀️'; }
+}
+document.getElementById('theme-btn').textContent = document.documentElement.getAttribute('data-theme')==='light' ? '☀️' : '🌙';
+
+// ── MODE SWITCH ──
+let mode = 'photo';
+function setMode(m){
+  mode = m;
+  document.getElementById('tab-photo').classList.toggle('active', m==='photo');
+  document.getElementById('tab-text').classList.toggle('active', m==='text');
+  document.getElementById('photo-mode').style.display = m==='photo' ? 'block' : 'none';
+  document.getElementById('text-mode').classList.toggle('show', m==='text');
+}
+
+// ── FILE UPLOAD ──
+const fileInput = document.getElementById('file-input');
+const dropzone = document.getElementById('dropzone');
+let uploadedImage = null;
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+['dragover','dragenter'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(file){
+  const reader = new FileReader();
+  reader.onload = e => {
+    uploadedImage = e.target.result;
+    document.getElementById('preview-img').src = uploadedImage;
+    document.getElementById('preview-wrap').classList.add('show');
+    dropzone.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function removePreview(e){
+  e.stopPropagation();
+  uploadedImage = null;
+  document.getElementById('preview-wrap').classList.remove('show');
+  dropzone.style.display = 'block';
+  fileInput.value = '';
+}
+
+// ── SUBJECT CHIPS ──
+let selectedSubject = 'Otomatik';
+
+// ── SOLVE ──
+let currentSolution = null;
+let stepIndex = 0;
+let playing = false;
+let voiceOn = true;
+let playTimer = null;
+
+const btnSolveTxt = document.querySelector('.btn-solve .btn-txt');
+btnSolveTxt.textContent = 'Çöz →';
+
+async function solveQuestion(){
+  const q = mode === 'text' ? document.getElementById('q-textarea').value.trim() : null;
+  if (mode === 'text' && !q) { document.getElementById('q-textarea').focus(); return; }
+  if (mode === 'photo' && !uploadedImage) { dropzone.click(); return; }
+
+  const btn = document.getElementById('btn-solve');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btnSolveTxt.innerHTML = 'AI çözüyor <span class="spin-dots"><span></span><span></span><span></span></span>';
+
+  let result;
+  try {
+    // Gerçek backend: n8n webhook'una bağlanmak için aşağıdaki URL'i kendi n8n adresinle değiştir.
+    const res = await fetch('https://n8n.ykskafa.com/webhook/foto-coz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mod: mode, metin: q, gorsel: uploadedImage, ders: selectedSubject })
+    });
+    if (!res.ok) throw new Error('offline');
+    result = await res.json();
+  } catch(e) {
+    await new Promise(r => setTimeout(r, 1100));
+    result = mockSolve(q, selectedSubject);
+  }
+
+  currentSolution = result;
+  stepIndex = 0;
+  renderSolution(result);
+
+  btn.classList.remove('loading');
+  btn.disabled = false;
+  btnSolveTxt.textContent = 'Çöz →';
+}
+
+function mockSolve(q, subject){
+  const bank = {
+    Matematik: {
+      ders:'Matematik', konu:'2. Derece Denklem',
+      steps:[
+        'Öncelikle denklemi standart forma getiriyoruz: <strong>x² − 5x + 6 = 0</strong>.',
+        'Çarpanlarına ayırıyoruz: toplamı 5, çarpımı 6 olan iki sayı arıyoruz → <span class="hl">2 ve 3</span>.',
+        'Denklem şu hale gelir: <strong>(x−2)(x−3) = 0</strong>. Kökler: x=2 ve x=3.',
+        'Kökler toplamı = <span class="hl">2 + 3 = 5</span>. Vieta formülüyle de doğrulanır: −(b/a) = −(−5)/1 = 5.'
+      ],
+      answer:'5', tags:['2.Derece Denklem','Vieta','AYT Matematik']
+    },
+    Fizik: {
+      ders:'Fizik', konu:'Hareket',
+      steps:[
+        'Verilenleri listeliyoruz: başlangıç hızı, ivme ve zaman.',
+        'Hareket denklemini yazıyoruz: <strong>v = v₀ + a·t</strong>.',
+        'Değerleri yerine koyup işlemi yapıyoruz.',
+        'Sonucu birim analiziyle kontrol ediyoruz — <span class="hl">m/s</span> cinsinden tutarlı.'
+      ],
+      answer:'12 m/s', tags:['Kinematik','Hareket','TYT Fizik']
+    },
+    default: {
+      ders: subject==='Otomatik' ? 'Matematik' : subject,
+      konu: subject==='Otomatik' ? 'Genel Problem' : ykskafaRastgeleKonu(subject),
+      steps:[
+        'Soruyu okuyup ne istendiğini belirliyoruz.',
+        'Verilen bilgileri sıralıyor, gerekli formülü/kuralı seçiyoruz.',
+        'Adım adım işlemleri uyguluyoruz.',
+        'Sonucu seçeneklerle karşılaştırıp <span class="hl">doğru cevaba</span> ulaşıyoruz.'
+      ],
+      answer:'C', tags:['Problem Çözme','TYT/AYT']
+    }
+  };
+  const pick = bank[subject] || bank.default;
+  return pick;
+}
+
+function renderSolution(sol){
+  document.getElementById('solution-wrap').classList.add('show');
+  document.getElementById('chat-card').classList.add('show');
+  document.getElementById('final-answer').textContent = sol.answer;
+  document.getElementById('tags-row').innerHTML = sol.tags.map(t=>`<span class="tag">${t}</span>`).join('') + `<span class="tag">${sol.konu}</span>`;
+  document.getElementById('btn-save').classList.remove('saved');
+  document.getElementById('btn-save').textContent = '☆ Kütüphaneye Kaydet';
+
+  const scrub = document.getElementById('pc-scrub');
+  scrub.innerHTML = sol.steps.map((_,i)=>`<div class="pc-seg" id="seg-${i}" onclick="jumpToStep(${i})"><div class="pc-seg-fill"></div></div>`).join('');
+
+  document.getElementById('chat-body').innerHTML = `<div class="msg ai">Merhaba! Bu soruyu adım adım çözdüm 👋 Bir adımı anlamadıysan ya da neden öyle yaptığımı merak ediyorsan hemen sorabilirsin.</div>`;
+
+  stepIndex = 0;
+  showStep(0);
+  play();
+}
+
+function showStep(i){
+  const sol = currentSolution;
+  stepIndex = i;
+  document.getElementById('step-text').innerHTML = sol.steps[i];
+  document.getElementById('pc-label').textContent = `${i+1}/${sol.steps.length}`;
+  document.querySelectorAll('.pc-seg').forEach((el,j) => {
+    el.classList.toggle('done', j < i);
+    el.querySelector('.pc-seg-fill').style.width = j < i ? '100%' : j === i ? '0%' : '0%';
+  });
+  speak(sol.steps[i]);
+}
+
+function jumpToStep(i){
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  showStep(i);
+}
+
+function play(){
+  playing = true;
+  document.getElementById('btn-play').textContent = '❚❚';
+  advance();
+}
+function pause(){
+  playing = false;
+  document.getElementById('btn-play').textContent = '▶';
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  clearTimeout(playTimer);
+}
+function togglePlay(){ playing ? pause() : (stepIndex >= currentSolution.steps.length-1 ? (showStep(0), play()) : play()); }
+
+function advance(){
+  const sol = currentSolution;
+  const el = document.getElementById(`seg-${stepIndex}`);
+  const fill = el ? el.querySelector('.pc-seg-fill') : null;
+  const plainLen = sol.steps[stepIndex].replace(/<[^>]+>/g,'').length;
+  const dur = Math.max(2200, plainLen * 55);
+  let start = performance.now();
+  function tick(now){
+    if (!playing) return;
+    const t = Math.min((now-start)/dur, 1);
+    if (fill) fill.style.width = (t*100)+'%';
+    if (t < 1) { playTimer = requestAnimationFrame(tick); }
+    else {
+      if (stepIndex < sol.steps.length - 1) { showStep(stepIndex+1); start = performance.now(); playTimer = requestAnimationFrame(tick); }
+      else { pause(); }
+    }
+  }
+  playTimer = requestAnimationFrame(tick);
+}
+
+function speak(text){
+  if (!voiceOn || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const plain = text.replace(/<[^>]+>/g,'');
+  const utter = new SpeechSynthesisUtterance(plain);
+  utter.lang = 'tr-TR';
+  utter.rate = 1.0;
+  window.speechSynthesis.speak(utter);
+}
+
+function toggleVoice(){
+  voiceOn = !voiceOn;
+  const btn = document.getElementById('btn-voice');
+  btn.textContent = voiceOn ? '🔊' : '🔇';
+  btn.classList.toggle('voice-off', !voiceOn);
+  if (!voiceOn) window.speechSynthesis && window.speechSynthesis.cancel();
+}
+
+// ── SAVE TO LIBRARY ──
+function saveToLibrary(){
+  if (!currentSolution) return;
+  const lib = JSON.parse(localStorage.getItem('ykskafa_library') || '[]');
+  const entry = {
+    id: 'sol_' + Date.now(),
+    type: 'solution',
+    ders: currentSolution.ders,
+    konu: currentSolution.konu,
+    steps: currentSolution.steps,
+    answer: currentSolution.answer,
+    tags: currentSolution.tags,
+    favorite: true,
+    createdAt: new Date().toISOString()
+  };
+  lib.unshift(entry);
+  localStorage.setItem('ykskafa_library', JSON.stringify(lib));
+  document.getElementById('btn-save').classList.add('saved');
+  document.getElementById('btn-save').textContent = '★ Kaydedildi';
+  renderRecent();
+}
+
+// ── CHAT ──
+async function sendChat(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const body = document.getElementById('chat-body');
+  body.innerHTML += `<div class="msg user">${escapeHtml(text)}</div>`;
+  input.value = '';
+  body.scrollTop = body.scrollHeight;
+
+  const typingEl = document.createElement('div');
+  typingEl.className = 'msg ai';
+  typingEl.innerHTML = '<span class="spin-dots" style="filter:invert(1)"><span></span><span></span><span></span></span>';
+  body.appendChild(typingEl);
+  body.scrollTop = body.scrollHeight;
+
+  let reply;
+  try {
+    const res = await fetch('https://n8n.ykskafa.com/webhook/foto-coz-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ soru: text, baglam: currentSolution })
+    });
+    if (!res.ok) throw new Error('offline');
+    const data = await res.json();
+    reply = data.cevap;
+  } catch(e) {
+    await new Promise(r => setTimeout(r, 700));
+    reply = mockChatReply(text);
+  }
+  typingEl.innerHTML = reply;
+  body.scrollTop = body.scrollHeight;
+}
+
+function mockChatReply(q){
+  const templates = [
+    `İyi soru. <strong>${(currentSolution && currentSolution.konu) || 'Bu konu'}</strong> içinde bu adımı şu mantıkla yaptık: önce elimizdeki veriyi sadeleştiriyoruz, sonra doğrudan formülü uyguluyoruz. İstersen bu adımı tekrar dinlemen için oynatıcıdan o kısma atlayabilirsin.`,
+    `Şunu unutma: bu tip sorularda genelde bir "tuzak seçenek" olur. Adım adım giderek elemeyi doğru yaparsan hata payın azalır.`,
+    `Bunu şöyle düşün: aynı mantığı benzer bir soruda da uygulayabilirsin — sayılar değişse de yöntem aynı kalır.`
+  ];
+  return templates[Math.floor(Math.random()*templates.length)];
+}
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// ── RECENT LIST ──
+function renderRecent(){
+  const lib = JSON.parse(localStorage.getItem('ykskafa_library') || '[]').filter(x=>x.type==='solution').slice(0,5);
+  const el = document.getElementById('recent-list');
+  const colors = {Matematik:'#c8f53c',Fizik:'#3cf5e8',Kimya:'#f53caa',Biyoloji:'#3cf58a',Türkçe:'#7c6af7',Geometri:'#f5a23c'};
+  if (!lib.length){ el.innerHTML = '<div style="font-size:12px;color:var(--muted);font-weight:300">Henüz kayıtlı çözümün yok. Bir soru çöz ve kaydet!</div>'; return; }
+  el.innerHTML = lib.map(x => `
+    <div class="recent-item" onclick="location.href='ykskafa_kutuphane.html'">
+      <div class="recent-dot" style="background:${colors[x.ders]||'#7c6af7'}"></div>
+      <div class="recent-txt"><strong>${x.ders}</strong> — ${x.konu}</div>
+    </div>`).join('');
+}
+renderRecent();
+</script>
+</body>
+</html>

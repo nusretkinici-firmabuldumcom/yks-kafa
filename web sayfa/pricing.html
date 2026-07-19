@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Abonelik Planları - YKS Hazırlık Platformu">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Abonelik ve Ödeme - YKS Hazırlık Platformu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/pricing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>YKS Hazırlık</span>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-home"></i> Ana Sayfa
+                    </a>
+                    <a href="pricing.html" class="nav-link active">
+                        <i class="fas fa-credit-card"></i> Abonelik
+                    </a>
+                </nav>
+                <div class="user-info">
+                    <span id="userNameDisplay"><i class="fas fa-user"></i> Kullanıcı</span>
+                    <button onclick="handleLogout()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1><i class="fas fa-star"></i> Abonelik Planları</h1>
+                <p>Size en uygun planı seçin ve sınava hazırlanın!</p>
+            </div>
+
+            <!-- Current Plan Info -->
+            <section id="currentPlanSection" class="current-plan-section">
+                <div class="current-plan-card">
+                    <div class="plan-header">
+                        <i class="fas fa-info-circle"></i>
+                        <h3>Mevcut Planınız</h3>
+                    </div>
+                    <div class="plan-details">
+                        <div class="plan-info">
+                            <span class="plan-badge" id="currentPlanBadge">ÜCRETSİZ</span>
+                            <p class="plan-questions">
+                                <i class="fas fa-calendar-check"></i>
+                                <span id="remainingQuestions">15</span> gün | 680 ücretsiz soru
+                                <br><small style="opacity: 0.8;">Her dersten 40 soru çözme hakkı</small>
+                            </p>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="usageProgressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <button onclick="showUpgradeModal()" class="btn btn-primary" id="upgradeBtn">
+                            <i class="fas fa-rocket"></i> Yükselt
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pricing Plans -->
+            <section class="pricing-section">
+                <h2><i class="fas fa-tags"></i> Planlarımız</h2>
+                <div class="pricing-grid">
+                    <!-- Free Plan -->
+                    <div class="pricing-card free">
+                        <div class="pricing-header">
+                            <i class="fas fa-gift"></i>
+                            <h3>Ücretsiz</h3>
+                            <div class="price">
+                                <span class="amount">0</span>
+                                <span class="currency">TL</span>
+                            </div>
+                            <p class="period">Deneme</p>
+                        </div>
+                        <div class="pricing-body">
+                            <ul class="features-list">
+                                <li><i class="fas fa-check"></i> 15 Günlük Ücretsiz Deneme</li>
+                                <li><i class="fas fa-check"></i> Her Dersten 40 Soru (680 Toplam)</li>
+                                <li><i class="fas fa-check"></i> TYT & AYT Erişimi</li>
+                                <li><i class="fas fa-check"></i> Temel Performans Analizi</li>
+                                <li><i class="fas fa-times"></i> Sınırsız Soru</li>
+                                <li><i class="fas fa-times"></i> Yapay Zeka Desteği</li>
+                                <li><i class="fas fa-times"></i> Öncelikli Destek</li>
+                            </ul>
+                            <button class="btn btn-outline" disabled>
+                                <i class="fas fa-check-circle"></i> Mevcut Plan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Plan -->
+                    <div class="pricing-card monthly">
+                        <div class="pricing-header">
+                            <i class="fas fa-calendar-alt"></i>
+                            <h3>Aylık</h3>
+                            <div class="price">
+                                <span class="amount">250</span>
+                                <span class="currency">TL</span>
+                            </div>
+                            <p class="period">/ ay</p>
+                        </div>
+                        <div class="pricing-body">
+                            <ul class="features-list">
+                                <li><i class="fas fa-check"></i> <strong>Sınırsız</strong> Soru Çözme</li>
+                                <li><i class="fas fa-check"></i> TYT & AYT Tüm Konular</li>
+                                <li><i class="fas fa-check"></i> Detaylı Performans Analizi</li>
+                                <li><i class="fas fa-check"></i> Yapay Zeka Destekli Sorular</li>
+                                        <li><i class="fas fa-check"></i> E-posta Desteği</li>
+                            </ul>
+                            <button onclick="selectPlan('monthly', 250)" class="btn btn-primary">
+                                <i class="fas fa-shopping-cart"></i> Satın Al
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 6 Months Plan -->
+                    <div class="pricing-card sixmonths popular">
+                        <div class="popular-badge">
+                            <i class="fas fa-star"></i> EN POPÜLER
+                        </div>
+                        <div class="pricing-header">
+                            <i class="fas fa-calendar-check"></i>
+                            <h3>6 Aylık</h3>
+                            <div class="price">
+                                <span class="amount">600</span>
+                                <span class="currency">TL</span>
+                            </div>
+                            <p class="period">/ 6 ay</p>
+                            <div class="save-badge">
+                                <i class="fas fa-tag"></i> 900 TL yerine - %33 İndirim
+                            </div>
+                        </div>
+                        <div class="pricing-body">
+                            <ul class="features-list">
+                                <li><i class="fas fa-check"></i> <strong>Sınırsız</strong> Soru Çözme</li>
+                                <li><i class="fas fa-check"></i> TYT & AYT Tüm Konular</li>
+                                <li><i class="fas fa-check"></i> Detaylı Performans Analizi</li>
+                                <li><i class="fas fa-check"></i> Yapay Zeka Destekli Sorular</li>
+                                        <li><i class="fas fa-check"></i> Öncelikli E-posta Desteği</li>
+                                <li><i class="fas fa-check"></i> Deneme Sınavları</li>
+                            </ul>
+                            <button onclick="selectPlan('6months', 600)" class="btn btn-primary">
+                                <i class="fas fa-shopping-cart"></i> Satın Al
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Yearly Plan -->
+                    <div class="pricing-card yearly best-value">
+                        <div class="popular-badge best">
+                            <i class="fas fa-trophy"></i> EN AVANTAJLI
+                        </div>
+                        <div class="pricing-header">
+                            <i class="fas fa-calendar"></i>
+                            <h3>Yıllık</h3>
+                            <div class="price">
+                                <span class="amount">1000</span>
+                                <span class="currency">TL</span>
+                            </div>
+                            <p class="period">/ yıl</p>
+                            <div class="save-badge">
+                                <i class="fas fa-fire"></i> 3000 TL yerine - %67 İndirim
+                            </div>
+                        </div>
+                        <div class="pricing-body">
+                            <ul class="features-list">
+                                <li><i class="fas fa-check"></i> <strong>Sınırsız</strong> Soru Çözme</li>
+                                <li><i class="fas fa-check"></i> TYT & AYT Tüm Konular</li>
+                                <li><i class="fas fa-check"></i> Detaylı Performans Analizi</li>
+                                <li><i class="fas fa-check"></i> Yapay Zeka Destekli Sorular</li>
+                                        <li><i class="fas fa-check"></i> 7/24 Öncelikli Destek</li>
+                                <li><i class="fas fa-check"></i> Deneme Sınavları</li>
+                                <li><i class="fas fa-check"></i> Özel Eğitmen Görüşmeleri</li>
+                            </ul>
+                            <button onclick="selectPlan('yearly', 1000)" class="btn btn-primary">
+                                <i class="fas fa-shopping-cart"></i> Satın Al
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ Section -->
+            <section class="faq-section">
+                <h2><i class="fas fa-question-circle"></i> Sıkça Sorulan Sorular</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h4><i class="fas fa-chevron-right"></i> 15 günlük ücretsiz deneme bitince ne olur?</h4>
+                        <p>15 günlük deneme süreniz veya 680 ücretsiz soru hakkınız bittiğinde premium planlara yükseltme yapmanız gerekir. Yükseltme sonrası sınırsız soru çözebilirsiniz.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4><i class="fas fa-chevron-right"></i> Ödeme güvenli mi?</h4>
+                        <p>Evet, tüm ödemeler 256-bit SSL şifreleme ile korunmaktadır. Kredi kartı bilgileriniz güvendedir.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4><i class="fas fa-chevron-right"></i> İptal ve iade politikası nedir?</h4>
+                        <p>İlk 7 gün içinde %100 iade garantisi sunuyoruz. Memnun kalmazsanız paranızı geri alabilirsiniz.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4><i class="fas fa-chevron-right"></i> Planı değiştirebilir miyim?</h4>
+                        <p>Evet, istediğiniz zaman planınızı yükseltebilir veya değiştirebilirsiniz. Kalan süreniz yeni plana aktarılır.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content payment-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-credit-card"></i> Ödeme Bilgileri</h2>
+                <button onclick="closePaymentModal()" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Selected Plan Summary -->
+                <div class="payment-summary">
+                    <h3>Seçilen Plan</h3>
+                    <div class="summary-details">
+                        <div class="summary-item">
+                            <span>Plan:</span>
+                            <strong id="selectedPlanName">-</strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>Tutar:</span>
+                            <strong id="selectedPlanPrice">0 TL</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Form -->
+                <form id="paymentForm" onsubmit="processPayment(event)">
+                    <h3>Kart Bilgileri</h3>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-credit-card"></i> Kart Üzerindeki İsim</label>
+                        <input type="text" id="cardName" required placeholder="AD SOYAD">
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-credit-card"></i> Kart Numarası</label>
+                        <input type="text" id="cardNumber" required placeholder="1234 5678 9012 3456" maxlength="19">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar"></i> Son Kullanma Tarihi</label>
+                            <input type="text" id="cardExpiry" required placeholder="MM/YY" maxlength="5">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-lock"></i> CVV</label>
+                            <input type="text" id="cardCvv" required placeholder="123" maxlength="3">
+                        </div>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="termsAccept" required>
+                        <label for="termsAccept">
+                            <a href="#" onclick="showTerms(); return false;">Kullanım koşullarını</a> ve 
+                            <a href="#" onclick="showPrivacy(); return false;">gizlilik politikasını</a> kabul ediyorum
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-lock"></i> Güvenli Ödeme Yap
+                    </button>
+
+                    <div class="security-badges">
+                        <i class="fas fa-shield-alt"></i> 256-bit SSL Güvenlik
+                        <i class="fas fa-lock"></i> Güvenli Ödeme
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 YKS Hazırlık Platformu. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Button -->
+    <a href="https://api.whatsapp.com/send?phone=905439679167&text=Merhaba%2C%20YKS%20KAFA%20fiyatlar%C4%B1%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." class="whatsapp-button" target="_blank" rel="noopener noreferrer" title="WhatsApp ile direkt mesaj at">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/pricing.js"></script>
+</body>
+</html>

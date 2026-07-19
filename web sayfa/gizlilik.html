@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="YKS KAFA - Gizlilik ve Güvenlik Politikası">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Gizlilik ve Güvenlik Politikası - YKS KAFA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .legal-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            color: #1e293b;
+        }
+        
+        .legal-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .legal-header h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .legal-header .subtitle {
+            color: #64748b;
+            font-size: 16px;
+        }
+        
+        .legal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            line-height: 1.8;
+        }
+        
+        .legal-content h2 {
+            color: #2563eb;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            border-left: 4px solid #2563eb;
+            padding-left: 15px;
+        }
+        
+        .legal-content h3 {
+            color: #475569;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .legal-content p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .legal-content ul {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        .legal-content ul li {
+            margin-bottom: 10px;
+            list-style-type: disc;
+        }
+        
+        .legal-content strong {
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+        .security-box {
+            background: #f0fdf4;
+            border-left: 4px solid #16a34a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .security-box h3 {
+            color: #16a34a;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .warning-box {
+            background: #fef2f2;
+            border-left: 4px solid #dc2626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .warning-box h3 {
+            color: #dc2626;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .info-box i {
+            color: #2563eb;
+            margin-right: 10px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature-item {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+        
+        .feature-item:hover {
+            border-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+        
+        .feature-item i {
+            font-size: 40px;
+            color: #2563eb;
+            margin-bottom: 15px;
+        }
+        
+        .feature-item h4 {
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 30px;
+            transition: all 0.3s;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .legal-content {
+                padding: 20px;
+            }
+            
+            .legal-header h1 {
+                font-size: 24px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-brain" style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                    <span><span style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">KAFA</span> YKS Hazırlık</span>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-home"></i> Ana Sayfa
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="legal-container">
+        <div class="legal-header">
+            <h1><i class="fas fa-lock"></i> Gizlilik ve Güvenlik</h1>
+            <p class="subtitle">Kişisel Bilgileriniz Güvende</p>
+        </div>
+
+        <div class="legal-content">
+            <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                <strong>Taahhüdümüz:</strong> YKS KAFA olarak, kullanıcılarımızın kişisel bilgilerinin güvenliğini en üst düzeyde korumayı ve gizliliğe saygı göstermeyi taahhüt ediyoruz.
+            </div>
+
+            <h2>Gizlilik İlkeleri</h2>
+            
+            <p>Ziyaretçilerimizden alınan kişisel üyelik bilgileri, <strong>en yüksek elektronik ve fiziksel güvenlik standartlarında</strong> yalnızca yetki sahibi olan personelin ulaşabileceği bir ortamda saklanmaktadır.</p>
+
+            <p><strong>YKS KAFA</strong>, kullanıcılardan aldığı kişisel bilgileri <strong>her ne şekilde olursa olsun üçüncü şahıslarla paylaşmamayı</strong> ve <strong>hiçbir surette kötüye kullanmamayı</strong> taahhüt eder.</p>
+
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <i class="fas fa-user-shield"></i>
+                    <h4>Gizlilik Garantisi</h4>
+                    <p>Bilgileriniz asla paylaşılmaz</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-lock"></i>
+                    <h4>Güvenli Saklama</h4>
+                    <p>En yüksek güvenlik standartları</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <h4>SSL Şifreleme</h4>
+                    <p>128 bit güvenlik</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-check-circle"></i>
+                    <h4>Güvenilir Platform</h4>
+                    <p>Onaylı ve sertifikalı</p>
+                </div>
+            </div>
+
+            <h2>Güvenlik Önlemlerimiz</h2>
+
+            <div class="security-box">
+                <h3><i class="fas fa-shield-alt"></i> Bilgi Güvenliği</h3>
+                <ul>
+                    <li><strong>YKS KAFA firmasına vermiş olduğunuz bilgiler asla 3. şahıslarla paylaşılmaz.</strong></li>
+                    
+                    <li>Sistemimizde sadece teslimat ve fatura adresi ile ilgili bilgilerle üyelik bilgileriniz tutulmaktadır.</li>
+                    
+                    <li><strong>Kredi kartı ve bununla ilgili banka bilgileriniz ödeme sırasında bile sistemimizde tutulmamakta,</strong> dolayısıyla biz dahil hiç kimse tarafından görülmemektedir.</li>
+                    
+                    <li>Ödeme sırasındaki tüm işlemler <strong>128 bit SSL şifreleme tekniği</strong> ile korunmaktadır.</li>
+                </ul>
+            </div>
+
+            <h3>Ödeme Güvenliği</h3>
+            <p>Kredi kartı bilgilerinizin bankaya gönderilmesi ve onayı süresince geçen 2-3 saniyelik süre içinde bir şekilde üçüncü şahıslar tarafından bilgilerinize erişilse dahi bu bilgiler karmaşık bir şifreleme tekniği ile şifrelenmiş olduğu için <strong>çözülmesi mümkün olmayacaktır.</strong></p>
+
+            <h3>Neden İnternet Güvenlidir?</h3>
+            <p>Sanılanın aksine kredi kartlarının internette kullanılması günlük hayattaki kullanımından <strong>daha güvenlidir.</strong> Çünkü:</p>
+
+            <ul>
+                <li>Kredi kartı bilgileri günlük hayatta kullanım sırasında rahatlıkla üçüncü şahıslar tarafından <strong>kopyalanabilir</strong> ve kötü amaçlarla kullanılabilir.</li>
+                
+                <li>Buna karşılık <strong>ykskafa.com</strong> adresinde yaptığınız alışverişlerde kredi kartı bilgileriniz bizim tarafımızdan dahi <strong>görülemez ve izlenemez.</strong></li>
+                
+                <li>Girdiğiniz bilgiler direkt olarak bankanıza şifrelenerek gönderilir ve oradan gelen şifrelenmiş yanıtlar size bir kaç saniye içinde iletilir.</li>
+            </ul>
+
+            <h2>Hangi Bilgileri Topluyoruz?</h2>
+            
+            <p>Platformumuzu kullanırken aşağıdaki bilgileri toplayabiliriz:</p>
+
+            <ul>
+                <li><strong>Kimlik Bilgileri:</strong> Ad, soyad, TC kimlik numarası (ödeme işlemleri için)</li>
+                <li><strong>İletişim Bilgileri:</strong> E-posta adresi, telefon numarası, adres</li>
+                <li><strong>Hesap Bilgileri:</strong> Kullanıcı adı, şifre</li>
+                <li><strong>Ödeme Bilgileri:</strong> Kredi kartı bilgileri (sadece ödeme işlemi sırasında, sistemimizde saklanmaz)</li>
+                <li><strong>Kullanım Verileri:</strong> Çözülen sorular, performans istatistikleri, site kullanım alışkanlıkları</li>
+            </ul>
+
+            <h2>Bilgilerinizi Nasıl Kullanıyoruz?</h2>
+
+            <p>Topladığımız bilgileri şu amaçlarla kullanırız:</p>
+
+            <ul>
+                <li>Platform hizmetlerini sağlamak ve geliştirmek</li>
+                <li>Hesabınızı oluşturmak ve yönetmek</li>
+                <li>Ödeme işlemlerini gerçekleştirmek</li>
+                <li>Size özel içerik ve öneriler sunmak</li>
+                <li>Performans analizleri yapmak</li>
+                <li>Müşteri desteği sağlamak</li>
+                <li>Yasal yükümlülüklerimizi yerine getirmek</li>
+                <li>Platform güvenliğini sağlamak</li>
+            </ul>
+
+            <h2>Çerez (Cookie) Kullanımı</h2>
+
+            <p>Web sitemiz, kullanıcı deneyimini geliştirmek ve site kullanımını analiz etmek amacıyla çerezler kullanmaktadır. Çerezler şunlar için kullanılır:</p>
+
+            <ul>
+                <li>Oturum bilgilerinizi hatırlamak</li>
+                <li>Tercihlerinizi kaydetmek</li>
+                <li>Site trafiğini analiz etmek</li>
+                <li>Pazarlama ve reklam faaliyetleri</li>
+            </ul>
+
+            <p>Tarayıcı ayarlarınızdan çerezleri kabul etmeme veya silme seçeneğine sahipsiniz.</p>
+
+            <h2>Bilgilerinizin Saklanma Süresi</h2>
+
+            <p>Kişisel verileriniz, toplama amacının gerektirdiği süre boyunca ve yasal yükümlülüklerimizi yerine getirmek için gerekli olan süre boyunca saklanır. Hesabınızı sildiğinizde, kişisel verileriniz yasal saklama süreleri dışında sistemimizden kalıcı olarak silinir.</p>
+
+            <h2>Haklarınız</h2>
+
+            <p>Kişisel verilerinizle ilgili olarak aşağıdaki haklara sahipsiniz:</p>
+
+            <ul>
+                <li>Kişisel verilerinize erişim talep etme</li>
+                <li>Kişisel verilerinizin düzeltilmesini isteme</li>
+                <li>Kişisel verilerinizin silinmesini isteme</li>
+                <li>Veri işleme faaliyetlerine itiraz etme</li>
+                <li>Verilerinizin taşınabilirliğini talep etme</li>
+                <li>Otomatik karar alma süreçlerine itiraz etme</li>
+            </ul>
+
+            <p>Bu haklarınızı kullanmak için <strong>info@ykskafa.com</strong> adresinden bizimle iletişime geçebilirsiniz.</p>
+
+            <h2>Üçüncü Taraf Hizmetler</h2>
+
+            <p>Platformumuz, ödeme işlemleri ve analitik hizmetler için güvenilir üçüncü taraf hizmet sağlayıcılarıyla çalışmaktadır. Bu hizmet sağlayıcılar, yalnızca hizmetlerini sunmak için gerekli olan bilgilere erişebilir ve bu bilgileri gizli tutmakla yükümlüdürler.</p>
+
+            <h2>Güvenlik Teknolojilerimiz</h2>
+
+            <div class="security-box">
+                <h3><i class="fas fa-server"></i> Teknik Güvenlik</h3>
+                <ul>
+                    <li><strong>SSL/TLS Şifreleme:</strong> Tüm veri aktarımları şifrelenmiştir</li>
+                    <li><strong>Güvenlik Duvarları:</strong> Yetkisiz erişimlere karşı korumalıdır</li>
+                    <li><strong>Düzenli Güvenlik Taramaları:</strong> Sistem sürekli izlenir</li>
+                    <li><strong>Güvenli Veri Merkezleri:</strong> Verileriniz sertifikalı merkezlerde saklanır</li>
+                    <li><strong>İki Faktörlü Kimlik Doğrulama:</strong> Hesap güvenliği için ekstra koruma</li>
+                    <li><strong>Şifre Koruma:</strong> Şifreler hash algoritmaları ile korunur</li>
+                </ul>
+            </div>
+
+            <h2>Veri İhlali Durumunda</h2>
+
+            <p>Herhangi bir veri ihlali durumunda, etkilenen kullanıcılarımızı ve ilgili düzenleyici kurumları yasal süre içinde bilgilendireceğimizi taahhüt ederiz.</p>
+
+            <div class="warning-box">
+                <h3><i class="fas fa-exclamation-triangle"></i> Önemli Uyarı!</h3>
+                <p><strong>Siparişlerinizle ilgili olarak göndereceğiniz e-postalarda asla kredi kartı numaranızı yazmayınız.</strong></p>
+                <p>Kredi kartı numarasının bildirilmesini gerektiren durumlarda lütfen <strong>0543 967 91 67</strong> numaralı telefondan Müşteri İlişkileri Servisimiz ile iletişim kurunuz.</p>
+            </div>
+
+            <h2>Çocukların Gizliliği</h2>
+
+            <p>Platformumuz 13 yaş ve üzeri kullanıcılara yöneliktir. 13 yaşın altındaki çocuklardan bilerek kişisel bilgi toplamıyoruz. Eğer 13 yaşın altında bir çocuğun bilgilerini topladığımızı fark edersek, bu bilgileri derhal sileriz.</p>
+
+            <h2>Politika Değişiklikleri</h2>
+
+            <p>Bu Gizlilik ve Güvenlik Politikası'nda zaman zaman değişiklik yapma hakkımızı saklı tutarız. Önemli değişiklikler olduğunda sizi e-posta yoluyla veya platformumuz üzerinden bilgilendireceğiz.</p>
+
+            <h2>Uluslararası Veri Aktarımı</h2>
+
+            <p>Kişisel verileriniz, hizmetlerimizi sunmak için gerekli olduğunda Türkiye dışındaki sunuculara aktarılabilir. Bu durumda, verilerinizin korunması için uygun güvenlik önlemlerini alırız ve ilgili ülkelerin veri koruma yasalarına uygunluk sağlarız.</p>
+
+            <h2>İletişim</h2>
+
+            <div class="info-box">
+                <p><strong>Gizlilik ve güvenlikle ilgili sorularınız için:</strong></p>
+                <p><i class="fas fa-envelope"></i> <strong>E-posta:</strong> info@ykskafa.com</p>
+                <p><i class="fas fa-phone"></i> <strong>Telefon:</strong> 0543 967 91 67</p>
+                <p><i class="fas fa-map-marker-alt"></i> <strong>Adres:</strong> İstanbul, Türkiye</p>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px;">
+                <p style="color: #64748b; font-size: 14px;">
+                    Son Güncelleme: 01.01.2025
+                </p>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="index.html" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Ana Sayfaya Dön
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" style="margin-top: 60px;">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3><i class="fas fa-brain" style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i> YKS KAFA</h3>
+                    <p>Yapay zeka destekli YKS hazırlık platformu</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Yasal</h4>
+                    <ul>
+                        <li><a href="kvkk.html">KVKK</a></li>
+                        <li><a href="gizlilik.html">Gizlilik Politikası</a></li>
+                        <li><a href="index.html#faq">SSS</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>İletişim</h4>
+                    <ul>
+                        <li><i class="fas fa-envelope"></i> info@ykskafa.com</li>
+                        <li><i class="fas fa-phone"></i> 0543 967 91 67</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 YKS KAFA. Tüm hakları saklıdır.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Button -->
+    <a href="https://api.whatsapp.com/send?phone=905439679167&text=Merhaba%2C%20Gizlilik%20ve%20G%C3%BCvenlik%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." class="whatsapp-button" target="_blank" rel="noopener noreferrer" title="WhatsApp ile direkt mesaj at">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <style>
+        .whatsapp-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+            transition: all 0.3s ease;
+            z-index: 998;
+            text-decoration: none;
+            animation: whatsappPulse 2s infinite;
+        }
+        .whatsapp-button:hover {
+            transform: scale(1.1) translateY(-5px);
+            box-shadow: 0 8px 30px rgba(37, 211, 102, 0.6);
+        }
+        @keyframes whatsappPulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4); }
+            50% { box-shadow: 0 4px 30px rgba(37, 211, 102, 0.7); }
+        }
+        @media (max-width: 768px) {
+            .whatsapp-button {
+                width: 50px;
+                height: 50px;
+                font-size: 26px;
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</body>
+</html>

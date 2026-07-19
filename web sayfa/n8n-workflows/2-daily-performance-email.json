@@ -1,0 +1,203 @@
+{
+  "name": "YKS Performans İzleme ve Bildirim",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Zamanlayıcı - Her Gün 20:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.API_BASE_URL}}/tables/users?limit=1000",
+        "options": {}
+      },
+      "id": "get-users",
+      "name": "Kullanıcıları Getir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-users",
+      "name": "Kullanıcıları Böl",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.API_BASE_URL}}/tables/user_answers?limit=1000",
+        "options": {}
+      },
+      "id": "get-answers",
+      "name": "Cevapları Getir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Bugünün cevaplarını filtrele ve analiz et\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nconst user = $node['Kullanıcıları Böl'].json;\nconst allAnswers = $node['Cevapları Getir'].json.data || [];\n\n// Bu kullanıcının bugünkü cevaplarını filtrele\nconst todayAnswers = allAnswers.filter(answer => {\n  const answerDate = new Date(answer.answered_date);\n  answerDate.setHours(0, 0, 0, 0);\n  return answer.user_id === user.id && answerDate.getTime() === today.getTime();\n});\n\n// Eğer bugün soru çözmediyse atla\nif (todayAnswers.length === 0) {\n  return null;\n}\n\n// İstatistikleri hesapla\nconst correctAnswers = todayAnswers.filter(a => a.is_correct).length;\nconst wrongAnswers = todayAnswers.length - correctAnswers;\nconst successRate = Math.round((correctAnswers / todayAnswers.length) * 100);\n\n// Ders bazlı analiz\nconst subjectStats = {};\ntodayAnswers.forEach(answer => {\n  if (!subjectStats[answer.subject]) {\n    subjectStats[answer.subject] = { total: 0, correct: 0 };\n  }\n  subjectStats[answer.subject].total++;\n  if (answer.is_correct) {\n    subjectStats[answer.subject].correct++;\n  }\n});\n\n// En iyi ve en kötü ders\nconst subjectRates = Object.entries(subjectStats).map(([subject, stats]) => ({\n  subject,\n  rate: Math.round((stats.correct / stats.total) * 100),\n  total: stats.total\n}));\n\nsubjectRates.sort((a, b) => b.rate - a.rate);\n\nreturn {\n  json: {\n    user: {\n      id: user.id,\n      username: user.username,\n      full_name: user.full_name,\n      email: user.email\n    },\n    stats: {\n      total: todayAnswers.length,\n      correct: correctAnswers,\n      wrong: wrongAnswers,\n      successRate: successRate\n    },\n    subjectStats: subjectRates,\n    bestSubject: subjectRates[0]?.subject || 'N/A',\n    worstSubject: subjectRates[subjectRates.length - 1]?.subject || 'N/A',\n    date: today.toISOString().split('T')[0]\n  }\n};"
+      },
+      "id": "analyze-performance",
+      "name": "Performans Analizi",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const data = $input.item.json;\n\n// Motivasyon mesajı\nlet motivationMessage = '';\nif (data.stats.successRate >= 80) {\n  motivationMessage = '🎉 Mükemmel performans! Böyle devam et!';\n} else if (data.stats.successRate >= 60) {\n  motivationMessage = '💪 Harika gidiyorsun! Biraz daha çalışarak hedefe ulaşacaksın!';\n} else if (data.stats.successRate >= 40) {\n  motivationMessage = '📚 İyi bir başlangıç! Eksik konuları tekrar etmeyi unutma.';\n} else {\n  motivationMessage = '🔥 Pes etme! Her hata bir öğrenme fırsatı. Yarın daha iyisini yapacaksın!';\n}\n\n// Ders bazlı analiz tablosu\nlet subjectTable = '';\ndata.subjectStats.forEach(subject => {\n  const emoji = subject.rate >= 70 ? '✅' : subject.rate >= 50 ? '⚠️' : '❌';\n  subjectTable += `${emoji} ${subject.subject}: ${subject.total} soru, %${subject.rate} başarı\\n`;\n});\n\n// E-posta içeriği\nconst emailContent = `\nMerhaba ${data.user.full_name},\n\nBugünkü performans özetin hazır! 📊\n\n═══════════════════════════════\nGÜNLÜK İSTATİSTİKLER (${data.date})\n═══════════════════════════════\n\n📝 Toplam Soru: ${data.stats.total}\n✅ Doğru: ${data.stats.correct}\n❌ Yanlış: ${data.stats.wrong}\n📈 Başarı Oranı: %${data.stats.successRate}\n\n${motivationMessage}\n\n═══════════════════════════════\nDERS BAZLI ANALİZ\n═══════════════════════════════\n\n${subjectTable}\n🏆 En İyi Ders: ${data.bestSubject}\n📌 Geliştirilmesi Gereken: ${data.worstSubject}\n\n═══════════════════════════════\nÖNERİLER\n═══════════════════════════════\n\n${data.stats.successRate < 70 ? `• ${data.worstSubject} dersinde konu tekrarı yapmanı öneririm\\n` : ''}• Hergün düzenli soru çözmeye devam et\n• Yanlış yaptığın soruların çözümlerini incele\n• Zayıf olduğun konulara daha fazla zaman ayır\n\n═══════════════════════════════\n\nYarın da soru çözmeye devam etmeyi unutma! 💪\n\nİyi çalışmalar,\nYKS KAFA Ekibi\n\n---\nBu e-posta otomatik olarak gönderilmiştir.\n`;\n\nreturn {\n  json: {\n    ...data,\n    emailContent: emailContent\n  }\n};"
+      },
+      "id": "build-email",
+      "name": "E-posta Oluştur",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ykskafa.com",
+        "toEmail": "={{$json.user.email}}",
+        "subject": "=Günlük Performans Raporu - {{$json.date}} | YKS KAFA",
+        "emailType": "text",
+        "message": "={{$json.emailContent}}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "E-posta Gönder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1450, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "loop-users",
+      "name": "Sonraki Kullanıcı",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Zamanlayıcı - Her Gün 20:00": {
+      "main": [
+        [
+          {
+            "node": "Kullanıcıları Getir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kullanıcıları Getir": {
+      "main": [
+        [
+          {
+            "node": "Kullanıcıları Böl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kullanıcıları Böl": {
+      "main": [
+        [
+          {
+            "node": "Cevapları Getir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cevapları Getir": {
+      "main": [
+        [
+          {
+            "node": "Performans Analizi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Performans Analizi": {
+      "main": [
+        [
+          {
+            "node": "E-posta Oluştur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-posta Oluştur": {
+      "main": [
+        [
+          {
+            "node": "E-posta Gönder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-posta Gönder": {
+      "main": [
+        [
+          {
+            "node": "Sonraki Kullanıcı",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sonraki Kullanıcı": {
+      "main": [
+        [
+          {
+            "node": "Kullanıcıları Böl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "instanceId": "yks-platform-n8n"
+  },
+  "tags": ["yks", "performance", "email", "daily-report"]
+}

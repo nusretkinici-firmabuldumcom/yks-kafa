@@ -1,0 +1,310 @@
+{
+  "name": "YKS - Günlük Motivasyon E-postası",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-question",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "de95cdaf-8f89-4f91-b910-b199d35037d2",
+      "name": "Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "yks-generate-question"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gelen parametreleri işle\nconst body = $input.item.json.body;\n\nconst examType = body.examType || 'TYT';\nconst subject = body.subject || 'Matematik';\nconst topic = body.topic || 'Genel';\nconst difficulty = body.difficulty || 'Orta';\n\n// GPT-4o için prompt oluştur\nconst prompt = `Sen bir YKS (Yükseköğretim Kurumları Sınavı) soru hazırlama uzmanısın.\n\nAşağıdaki kriterlere uygun bir ${examType} sorusu hazırla:\n\n**Ders:** ${subject}\n**Konu:** ${topic}\n**Zorluk Seviyesi:** ${difficulty}\n\n**Gereksinimler:**\n1. Soru Türkiye'deki YKS formatına uygun olmalı\n2. 4 şıklı (A, B, C, D) çoktan seçmeli\n3. Sorunun sadece bir doğru cevabı olmalı\n4. ${difficulty} seviyesine uygun olmalı\n   - Kolay: Temel bilgi ve kavrama\n   - Orta: Kavrama, uygulama ve analiz\n   - Zor: Analiz, sentez ve değerlendirme\n5. MEB müfredatına uygun olmalı\n6. Gerçekçi ve ölçülebilir olmalı\n7. Net bir dil kullan, belirsizlikten kaçın\n8. Çeldiriciler mantıklı olmalı\n\n**Çıktı Formatı (JSON):**\n{\n  \"soru\": \"Soru metni burada\",\n  \"secenekler\": {\n    \"A\": \"Seçenek A metni\",\n    \"B\": \"Seçenek B metni\",\n    \"C\": \"Seçenek C metni\",\n    \"D\": \"Seçenek D metni\"\n  },\n  \"dogruCevap\": \"A\",\n  \"aciklama\": \"Sorunun çözüm açıklaması\",\n  \"konu\": \"${topic}\",\n  \"zorluk\": \"${difficulty}\",\n  \"ders\": \"${subject}\",\n  \"examType\": \"${examType}\"\n}\n\nSadece JSON formatında yanıt ver, başka açıklama ekleme.`;\n\nreturn {\n  json: {\n    examType,\n    subject,\n    topic,\n    difficulty,\n    prompt\n  }\n};"
+      },
+      "id": "76157ad5-c484-4ca0-8bc9-8a7dad7ba9e0",
+      "name": "Parametreleri İşle1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// GPT-4o yanıtını parse et\nlet response = $input.item.json.message?.content || $input.item.json.text || '';\n\n// JSON formatını temizle\nlet cleanedResponse = response.trim();\nif (cleanedResponse.startsWith('```json')) {\n  cleanedResponse = cleanedResponse.replace(/```json\\n?/g, '').replace(/```\\n?/g, '');\n} else if (cleanedResponse.startsWith('```')) {\n  cleanedResponse = cleanedResponse.replace(/```\\n?/g, '');\n}\n\ntry {\n  const questionData = JSON.parse(cleanedResponse);\n  \n  // Timestamp ve ID ekle\n  questionData.id = `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  questionData.createdAt = new Date().toISOString();\n  questionData.status = 'active';\n  \n  return {\n    json: {\n      success: true,\n      question: questionData\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      success: false,\n      error: 'JSON parse hatası: ' + error.message,\n      rawResponse: cleanedResponse\n    }\n  };\n}"
+      },
+      "id": "81751915-a2b3-4d7b-8a81-341f13bba4fa",
+      "name": "Yanıtı İşle ve Parse Et1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "4a6a4e81-7d68-40bc-a85b-f000bc9119b7",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "path": "user-performance/:userId",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a304603b-4b2b-486f-a7b9-f77138b60d8a",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        224
+      ],
+      "webhookId": "194f1c06-23b6-44f8-adba-2f617059fd9a"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simüle edilmiş kullanıcı performans verisi\n// Gerçek uygulamada PostgreSQL'den çekilecek\n\nconst userId = $input.item.json.params.userId;\n\n// Örnek veri yapısı\nconst performanceData = {\n  userId: userId,\n  username: `Kullanıcı_${userId}`,\n  subjects: [\n    { ders: 'Matematik', toplam: 45, dogru: 32, yanlis: 10, bos: 3 },\n    { ders: 'Türkçe', toplam: 40, dogru: 35, yanlis: 4, bos: 1 },\n    { ders: 'Fizik', toplam: 30, dogru: 18, yanlis: 10, bos: 2 },\n    { ders: 'Kimya', toplam: 25, dogru: 15, yanlis: 8, bos: 2 },\n    { ders: 'Biyoloji', toplam: 20, dogru: 16, yanlis: 3, bos: 1 },\n    { ders: 'Tarih', toplam: 15, dogru: 12, yanlis: 2, bos: 1 },\n    { ders: 'Coğrafya', toplam: 18, dogru: 14, yanlis: 3, bos: 1 }\n  ]\n};\n\n// Toplam istatistikler hesapla\nconst totalQuestions = performanceData.subjects.reduce((sum, s) => sum + s.toplam, 0);\nconst totalCorrect = performanceData.subjects.reduce((sum, s) => sum + s.dogru, 0);\nconst totalWrong = performanceData.subjects.reduce((sum, s) => sum + s.yanlis, 0);\nconst totalEmpty = performanceData.subjects.reduce((sum, s) => sum + s.bos, 0);\n\n// Ders bazında başarı yüzdesi hesapla\nconst subjectPerformance = performanceData.subjects.map(subject => ({\n  ...subject,\n  basari_yuzdesi: subject.toplam > 0 \n    ? Math.round((subject.dogru / subject.toplam) * 100) \n    : 0\n}));\n\n// Güçlü ve zayıf yönleri belirle\nconst strongSubjects = subjectPerformance\n  .filter(s => s.basari_yuzdesi >= 70)\n  .map(s => s.ders);\n  \nconst weakSubjects = subjectPerformance\n  .filter(s => s.basari_yuzdesi < 50)\n  .map(s => s.ders);\n\n// Öneriler oluştur\nconst recommendations = [];\n\nif (weakSubjects.length > 0) {\n  recommendations.push(`🎯 Şu derslere daha fazla odaklanın: ${weakSubjects.join(', ')}`);\n}\n\nif (totalQuestions < 50) {\n  recommendations.push('📚 Daha fazla soru çözmeye devam edin. Hedef: günde en az 20 soru!');\n}\n\nif (strongSubjects.length > 0) {\n  recommendations.push(`💪 Güçlü olduğunuz dersler: ${strongSubjects.join(', ')}. Bu momentum'u koruyun!`);\n}\n\nif (totalEmpty > totalQuestions * 0.1) {\n  recommendations.push('⚠️ Boş bırakma oranınız yüksek. Tahmin yaparak şansınızı deneyin!');\n}\n\nconst overallSuccess = totalQuestions > 0 \n  ? Math.round((totalCorrect / totalQuestions) * 100) \n  : 0;\n\nif (overallSuccess >= 80) {\n  recommendations.push('🌟 Harika gidiyorsun! Bu performansı sürdür!');\n} else if (overallSuccess >= 60) {\n  recommendations.push('👍 İyi bir performans. Biraz daha çaba ile zirveye ulaşabilirsin!');\n} else {\n  recommendations.push('💡 Temel konuları tekrar et ve düzenli çalış. Başarı yakın!');\n}\n\nreturn {\n  json: {\n    success: true,\n    userId: userId,\n    username: performanceData.username,\n    summary: {\n      totalQuestions,\n      totalCorrect,\n      totalWrong,\n      totalEmpty,\n      overallSuccess\n    },\n    subjectPerformance: subjectPerformance,\n    insights: {\n      strongSubjects,\n      weakSubjects,\n      recommendations\n    },\n    generatedAt: new Date().toISOString()\n  }\n};"
+      },
+      "id": "0c314595-5b47-4ee9-b60a-fd7e80d1a182",
+      "name": "Performans Analizi Yap",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "3e150c45-9b5b-4370-8cf1-1970f3b8bc6f",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        448,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Örnek kullanıcı listesi\n// Gerçek uygulamada PostgreSQL'den çekilecek\n\nconst activeUsers = [\n  { id: 1, username: 'Ahmet', email: 'ahmet@example.com' },\n  { id: 2, username: 'Ayşe', email: 'ayse@example.com' },\n  { id: 3, username: 'Mehmet', email: 'mehmet@example.com' }\n];\n\nreturn activeUsers.map(user => ({ json: user }));"
+      },
+      "id": "f323437b-174b-4f31-afe8-93537759bf8f",
+      "name": "Aktif Kullanıcıları Getir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Motivasyon sözleri\nconst motivationalQuotes = [\n  '🎯 Başarı, küçük çabaların günlük tekrarıdır!',\n  '🚀 Her soru, hedefinize bir adım daha yaklaşmanızı sağlar.',\n  '💪 Bugün çözdüğün her soru, yarınki başarının temelidir.',\n  '⭐ Unutma: En zor yol, başarıya giden yoldur!',\n  '🎓 YKS\\'de başarı, azim ve çalışmanın ödülüdür.',\n  '🌟 Hedefine odaklan, başarı kaçınılmaz olacak!',\n  '📚 Bilgi güçtür, çalışmak ise o gücü kullanmaktır.',\n  '🏆 Her gün biraz daha ilerliyorsun, pes etme!'\n];\n\nconst user = $input.item.json;\nconst randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];\n\nconst emailSubject = `Günaydın ${user.username}! YKS'de Başarıya Bir Adım Daha! 🎓`;\n\nconst emailBody = `\n<html>\n<head>\n  <style>\n    body { \n      font-family: 'Segoe UI', Arial, sans-serif; \n      line-height: 1.6; \n      color: #333; \n      margin: 0;\n      padding: 0;\n    }\n    .container { \n      max-width: 600px; \n      margin: 0 auto; \n      background: #ffffff;\n    }\n    .header { \n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); \n      color: white; \n      padding: 40px 30px; \n      text-align: center;\n    }\n    .header h1 {\n      margin: 0;\n      font-size: 28px;\n      font-weight: 700;\n    }\n    .header p {\n      margin: 10px 0 0 0;\n      font-size: 16px;\n      opacity: 0.9;\n    }\n    .content { \n      background: #f9f9f9; \n      padding: 40px 30px;\n    }\n    .content h2 {\n      color: #667eea;\n      margin-top: 0;\n    }\n    .quote { \n      background: white; \n      border-left: 5px solid #667eea; \n      padding: 25px; \n      margin: 25px 0; \n      font-size: 18px; \n      font-style: italic;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n    }\n    .goals {\n      background: white;\n      padding: 20px;\n      border-radius: 8px;\n      margin: 20px 0;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n    }\n    .goals h3 {\n      color: #667eea;\n      margin-top: 0;\n    }\n    .goals ul {\n      list-style: none;\n      padding: 0;\n      margin: 0;\n    }\n    .goals li {\n      padding: 10px 0;\n      border-bottom: 1px solid #eee;\n      font-size: 15px;\n    }\n    .goals li:last-child {\n      border-bottom: none;\n    }\n    .cta { \n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n      color: white !important; \n      padding: 15px 40px; \n      text-decoration: none; \n      border-radius: 30px; \n      display: inline-block; \n      margin: 25px 0;\n      font-weight: 600;\n      font-size: 16px;\n      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);\n    }\n    .cta:hover {\n      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);\n    }\n    .footer { \n      text-align: center; \n      padding: 30px 20px; \n      color: #999; \n      font-size: 13px;\n      background: #f5f5f5;\n    }\n    .footer a {\n      color: #667eea;\n      text-decoration: none;\n    }\n    strong {\n      color: #667eea;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>🎓 YKS Hazırlık Platformu</h1>\n      <p>Günlük Motivasyon & Hedefler</p>\n    </div>\n    \n    <div class=\"content\">\n      <h2>Merhaba ${user.username}! 👋</h2>\n      <p>Yeni bir gün, yeni fırsatlar! Bugün de hedeflerine doğru emin adımlarla ilerlemeye hazır mısın?</p>\n      \n      <div class=\"quote\">\n        ${randomQuote}\n      </div>\n      \n      <div class=\"goals\">\n        <h3>📊 Bugünün Hedefleri:</h3>\n        <ul>\n          <li>✅ En az 20 soru çöz (TYT + AYT)</li>\n          <li>✅ Zayıf olduğun bir konuya 30 dakika odaklan</li>\n          <li>✅ Yanlış yaptığın soruları tekrar et</li>\n          <li>✅ Konu tekrarı yap ve notlarını gözden geçir</li>\n        </ul>\n      </div>\n      \n      <p style=\"text-align: center;\">\n        <a href=\"https://your-platform-url.com/login\" class=\"cta\">Hemen Soru Çözmeye Başla! 🚀</a>\n      </p>\n      \n      <p><strong>Unutma:</strong> Başarı, her gün attığın küçük adımların toplamıdır. Sen yaparsın! 💪</p>\n      \n      <p style=\"margin-top: 30px; padding: 20px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;\">\n        <strong>💡 İpucu:</strong> Performans sayfandan ilerleme grafiklerini takip etmeyi unutma!\n      </p>\n    </div>\n    \n    <div class=\"footer\">\n      <p>Bu e-postayı almak istemiyorsanız, <a href=\"#\">buradan</a> abonelikten çıkabilirsiniz.</p>\n      <p>© 2024 YKS Hazırlık Platformu. Tüm hakları saklıdır.</p>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    to: user.email,\n    subject: emailSubject,\n    html: emailBody,\n    username: user.username,\n    userId: user.id\n  }\n};"
+      },
+      "id": "4af18809-8794-423a-8d04-79c1f9988edc",
+      "name": "E-posta İçeriği Oluştur",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// E-posta gönderimi simülasyonu\n// Gerçek uygulamada SMTP node kullanılacak\n\nconst emailData = $input.item.json;\n\nconsole.log(`E-posta gönderildi: ${emailData.to}`);\nconsole.log(`Konu: ${emailData.subject}`);\n\nreturn {\n  json: {\n    success: true,\n    message: `E-posta ${emailData.username} kullanıcısına gönderildi`,\n    to: emailData.to,\n    sentAt: new Date().toISOString()\n  }\n};"
+      },
+      "id": "f6847d1c-2a02-4055-bc4d-2e1132db7f94",
+      "name": "E-posta Gönder (Simülasyon)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "411e68e9-3377-439e-9f72-6a3e8e24433e",
+      "name": "OpenAI GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ZJsqaZkn77T4fGi0",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "257422c5-bbde-4c4b-a7ef-860bca8b923f",
+      "name": "Her Sabah 8:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        448
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Parametreleri İşle1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parametreleri İşle1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI GPT-4o",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yanıtı İşle ve Parse Et1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Performans Analizi Yap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Performans Analizi Yap": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aktif Kullanıcıları Getir": {
+      "main": [
+        [
+          {
+            "node": "E-posta İçeriği Oluştur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-posta İçeriği Oluştur": {
+      "main": [
+        [
+          {
+            "node": "E-posta Gönder (Simülasyon)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "main": [
+        [
+          {
+            "node": "Yanıtı İşle ve Parse Et1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Her Sabah 8:00": {
+      "main": [
+        [
+          {
+            "node": "Aktif Kullanıcıları Getir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e3665f3e-1ef6-45bb-b416-42a439788927",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fbbe4c5af7a16e84966f5822bbd2bcab588c2725431d43aaaafa12f210522cf2"
+  },
+  "id": "Zrb7WbMN0zLawhL8",
+  "tags": []
+}

@@ -1,0 +1,171 @@
+{
+  "name": "YKS KAFA - Yapay Zeka Soru Üretimi",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-question",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Soru Talebi",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "ykskafa-generate-question",
+      "notes": "POST /webhook/generate-question\nBody: { ders, konu, zorluk, kullanici_id }"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "id": "check-ders",
+              "leftValue": "={{ $json.body.ders }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "validate-input",
+      "name": "Girdi Doğrulama",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4o"
+            },
+            {
+              "name": "response_format",
+              "value": "={ \"type\": \"json_object\" }"
+            },
+            {
+              "name": "messages",
+              "value": "=[\n  {\n    \"role\": \"system\",\n    \"content\": \"Sen bir YKS sınav hazırlık uzmanısın. Türkiye'deki üniversite sınavı (YKS) için özgün, doğru ve pedagojik açıdan uygun sorular üretiyorsun. Her zaman geçerli JSON formatında yanıt ver.\"\n  },\n  {\n    \"role\": \"user\",\n    \"content\": \"Aşağıdaki kriterlere uygun bir YKS sorusu üret:\\n\\nDers: {{ $('Webhook - Soru Talebi').item.json.body.ders }}\\nKonu: {{ $('Webhook - Soru Talebi').item.json.body.konu }}\\nZorluk: {{ $('Webhook - Soru Talebi').item.json.body.zorluk }} (kolay/orta/zor)\\n\\nJSON formatında yanıt ver:\\n{\\n  \\\"soru_metni\\\": \\\"...\\\",\\n  \\\"secenekler\\\": {\\\"A\\\": \\\"...\\\", \\\"B\\\": \\\"...\\\", \\\"C\\\": \\\"...\\\", \\\"D\\\": \\\"...\\\", \\\"E\\\": \\\"...\\\"},\\n  \\\"dogru_cevap\\\": \\\"A/B/C/D/E\\\",\\n  \\\"cozum_aciklamasi\\\": \\\"adım adım çözüm\\\",\\n  \\\"konu_etiketi\\\": \\\"...\\\",\\n  \\\"zorluk_puani\\\": 1-5\\n}\"\n  }\n]"
+            },
+            {
+              "name": "max_tokens",
+              "value": "800"
+            },
+            {
+              "name": "temperature",
+              "value": "0.7"
+            }
+          ]
+        }
+      },
+      "id": "openai-generate",
+      "name": "GPT-4o Soru Üret",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices[0].message.content;\nlet soru;\ntry {\n  soru = JSON.parse(content);\n} catch(e) {\n  throw new Error('GPT yanıtı JSON parse edilemedi: ' + content);\n}\n\nconst ders = $('Webhook - Soru Talebi').first().json.body.ders;\nconst kullanici_id = $('Webhook - Soru Talebi').first().json.body.kullanici_id;\nconst konu = $('Webhook - Soru Talebi').first().json.body.konu;\nconst zorluk = $('Webhook - Soru Talebi').first().json.body.zorluk;\n\nreturn [{\n  json: {\n    soru_metni: soru.soru_metni,\n    secenekler: soru.secenekler,\n    dogru_cevap: soru.dogru_cevap,\n    cozum_aciklamasi: soru.cozum_aciklamasi,\n    konu_etiketi: soru.konu_etiketi || konu,\n    zorluk_puani: soru.zorluk_puani || 3,\n    ders: ders,\n    konu: konu,\n    zorluk: zorluk,\n    kullanici_id: kullanici_id,\n    olusturulma_tarihi: new Date().toISOString(),\n    kaynak: 'gpt-4o'\n  }\n}];"
+      },
+      "id": "parse-question",
+      "name": "Soruyu İşle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/sorular",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"soru_metni\": \"{{ $json.soru_metni }}\",\n  \"secenekler\": {{ JSON.stringify($json.secenekler) }},\n  \"dogru_cevap\": \"{{ $json.dogru_cevap }}\",\n  \"cozum_aciklamasi\": \"{{ $json.cozum_aciklamasi }}\",\n  \"ders\": \"{{ $json.ders }}\",\n  \"konu\": \"{{ $json.konu }}\",\n  \"zorluk\": \"{{ $json.zorluk }}\",\n  \"zorluk_puani\": {{ $json.zorluk_puani }},\n  \"olusturan\": \"ai\",\n  \"olusturulma_tarihi\": \"{{ $json.olusturulma_tarihi }}\"\n}"
+      },
+      "id": "save-to-supabase",
+      "name": "Supabase'e Kaydet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"soru_id\": \"{{ $json[0].id }}\",\n  \"soru\": {\n    \"metni\": \"{{ $('Soruyu İşle').item.json.soru_metni }}\",\n    \"secenekler\": {{ JSON.stringify($('Soruyu İşle').item.json.secenekler) }},\n    \"ders\": \"{{ $('Soruyu İşle').item.json.ders }}\",\n    \"konu\": \"{{ $('Soruyu İşle').item.json.konu }}\",\n    \"zorluk_puani\": {{ $('Soruyu İşle').item.json.zorluk_puani }}\n  }\n}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "success-response",
+      "name": "Başarılı Yanıt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": false, \"error\": \"Gerekli alanlar eksik: ders, konu, zorluk\" }",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Hata Yanıtı",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 420]
+    }
+  ],
+  "connections": {
+    "Webhook - Soru Talebi": {
+      "main": [[{ "node": "Girdi Doğrulama", "type": "main", "index": 0 }]]
+    },
+    "Girdi Doğrulama": {
+      "main": [
+        [{ "node": "GPT-4o Soru Üret", "type": "main", "index": 0 }],
+        [{ "node": "Hata Yanıtı", "type": "main", "index": 0 }]
+      ]
+    },
+    "GPT-4o Soru Üret": {
+      "main": [[{ "node": "Soruyu İşle", "type": "main", "index": 0 }]]
+    },
+    "Soruyu İşle": {
+      "main": [[{ "node": "Supabase'e Kaydet", "type": "main", "index": 0 }]]
+    },
+    "Supabase'e Kaydet": {
+      "main": [[{ "node": "Başarılı Yanıt", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA - GPT-4o ile ders/konu/zorluk bazlı özgün soru üretir, Supabase'e kaydeder.",
+    "envVars": ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+  }
+}

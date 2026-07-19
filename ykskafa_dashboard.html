@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--surface:#0e0e1a;--surface2:#13131f;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0ff;--muted:#8b89a8;--accent:#c8f53c;--accent2:#7c6af7;--accent3:#f53c7a;--success:#3cf58a;--nav-bg:rgba(8,8,16,.9);--syne:'Syne',sans-serif;--dm:'DM Sans',sans-serif}
+[data-theme="light"]{--bg:#f4f3fa;--surface:#ffffff;--surface2:#f0eefa;--border:rgba(20,16,40,0.08);--border2:rgba(20,16,40,0.14);--text:#161426;--muted:#6b6885;--nav-bg:rgba(255,255,255,.85)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--dm);background:var(--bg);color:var(--text);min-height:100vh;display:flex;transition:background .25s ease,color .25s ease}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,106,247,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(124,106,247,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;padding:28px 0}
+.sb-logo{font-family:var(--syne);font-size:20px;font-weight:800;letter-spacing:-1px;padding:0 24px 28px;border-bottom:1px solid var(--border);margin-bottom:20px;text-decoration:none;color:var(--text)}
+.sb-logo span{color:var(--accent)}
+.sb-section{font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:0 24px;margin:16px 0 8px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none;border-left:2px solid transparent}
+.sb-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.sb-item.active{color:var(--text);background:rgba(124,106,247,.08);border-left-color:var(--accent2)}
+.sb-item svg{flex-shrink:0;opacity:.6}
+.sb-item.active svg{opacity:1}
+.sb-badge{margin-left:auto;background:var(--accent2);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px}
+.sb-bottom{margin-top:auto;padding:20px 24px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:10px}
+.sb-avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent3));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--syne);font-size:12px;font-weight:800;flex-shrink:0}
+.sb-name{font-size:13px;font-weight:500}
+.sb-plan{font-size:11px;color:var(--accent);margin-top:1px}
+
+/* ── TOPBAR ── */
+.topbar{position:fixed;left:220px;right:0;top:0;height:56px;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);z-index:40;display:flex;align-items:center;justify-content:space-between;padding:0 32px}
+.theme-toggle{width:34px;height:34px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent2)}
+.topbar-title{font-family:var(--syne);font-size:16px;font-weight:800;letter-spacing:-.5px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.btn-primary-sm{background:var(--accent);color:#080810;font-family:var(--dm);font-size:13px;font-weight:500;padding:8px 18px;border:none;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-primary-sm:hover{opacity:.88}
+.streak-pill{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);padding:6px 12px;font-size:13px;color:var(--muted)}
+.streak-pill span{color:var(--accent);font-family:var(--syne);font-weight:700}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── MAIN ── */
+.main{margin-left:220px;margin-top:56px;position:relative;z-index:1;padding:32px;min-height:calc(100vh - 56px);display:flex;flex-direction:column;gap:24px}
+
+/* ── GREETING BANNER ── */
+.greeting{background:var(--surface);border:1px solid var(--border);padding:28px 32px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:24px;position:relative;overflow:hidden}
+.greeting::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(200,245,60,.07) 0%,transparent 70%)}
+.greeting-sub{font-size:12px;color:var(--accent);font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.greeting-title{font-family:var(--syne);font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.greeting-desc{font-size:14px;color:var(--muted);font-weight:300}
+.greeting-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.today-goal{text-align:right}
+.goal-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.goal-bar-wrap{width:180px;height:6px;background:var(--border2);position:relative}
+.goal-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .8s ease}
+.goal-text{font-size:12px;color:var(--muted);margin-top:5px}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}
+.stat-card{background:var(--surface);padding:24px 28px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+.stat-card.s1::before{background:var(--accent2)}
+.stat-card.s2::before{background:var(--accent)}
+.stat-card.s3::before{background:var(--success)}
+.stat-card.s4::before{background:var(--accent3)}
+.stat-card-label{font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.stat-card-val{font-family:var(--syne);font-size:38px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:6px}
+.stat-card-change{font-size:12px;color:var(--success);display:flex;align-items:center;gap:4px}
+.stat-card-change.down{color:var(--accent3)}
+
+/* ── 2-COL GRID ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);padding:24px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-title{font-family:var(--syne);font-size:15px;font-weight:800;letter-spacing:-.3px}
+.card-action{font-size:12px;color:var(--accent2);cursor:pointer;text-decoration:none}
+.card-action:hover{text-decoration:underline}
+
+/* ── SUBJECT PERFORMANCE ── */
+.subject-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.subject-row:last-child{margin-bottom:0}
+.subj-name{font-size:13px;font-weight:400;width:80px;flex-shrink:0}
+.subj-bar-wrap{flex:1;height:6px;background:var(--border2);position:relative}
+.subj-bar{height:100%;border-radius:0;transition:width 1s ease}
+.subj-pct{font-family:var(--syne);font-size:13px;font-weight:700;width:36px;text-align:right;flex-shrink:0}
+.subj-trend{font-size:11px;width:28px;text-align:right;flex-shrink:0}
+
+/* ── WEEKLY CHART ── */
+.chart-wrap{height:120px;display:flex;align-items:flex-end;gap:8px;padding-top:8px}
+.chart-bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.chart-bar-stack{display:flex;flex-direction:column;align-items:center;width:100%;gap:2px;flex:1;justify-content:flex-end}
+.chart-bar{width:100%;transition:height .8s ease;min-height:3px}
+.chart-label{font-size:10px;color:var(--muted);text-align:center}
+.chart-total{font-size:10px;color:var(--text);font-family:var(--syne);font-weight:700;text-align:center;margin-bottom:4px}
+
+/* ── AI INSIGHT ── */
+.insight-item{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.insight-item:last-child{border-bottom:none;padding-bottom:0}
+.insight-icon{width:32px;height:32px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px}
+.insight-title{font-size:13px;font-weight:500;margin-bottom:3px}
+.insight-desc{font-size:12px;color:var(--muted);font-weight:300;line-height:1.6}
+.insight-tag{font-size:10px;padding:2px 8px;border:1px solid var(--border2);color:var(--muted);margin-top:6px;display:inline-block}
+.insight-tag.warn{border-color:rgba(245,162,60,.3);color:#f5a23c}
+.insight-tag.good{border-color:rgba(60,245,138,.3);color:var(--success)}
+
+/* ── RECENT ACTIVITY ── */
+.activity-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);font-size:13px}
+.activity-item:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.act-text{flex:1;color:var(--muted);font-weight:300}
+.act-text strong{color:var(--text);font-weight:400}
+.act-time{font-size:11px;color:var(--muted)}
+.act-score{font-family:var(--syne);font-size:12px;font-weight:700}
+
+/* ── UPCOMING ── */
+.upcoming-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.upcoming-item:last-child{border-bottom:none}
+.up-day{font-family:var(--syne);font-size:11px;font-weight:700;letter-spacing:1px;width:28px;text-align:center;color:var(--muted)}
+.up-content{flex:1}
+.up-title{font-size:13px;font-weight:400}
+.up-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.up-badge{font-size:10px;padding:3px 8px;border:1px solid var(--border2);color:var(--muted)}
+.up-badge.priority{border-color:rgba(245,60,122,.3);color:var(--accent3)}
+
+/* ── SORU BAŞLAT BUTTON ── */
+.start-btn{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(124,106,247,.12),rgba(200,245,60,.06));border:1px solid rgba(124,106,247,.25);padding:20px 24px;cursor:pointer;transition:all .2s;text-decoration:none;width:100%}
+.start-btn:hover{border-color:rgba(124,106,247,.5);transform:translateY(-1px)}
+.start-btn-left{display:flex;align-items:center;gap:14px}
+.start-btn-icon{font-size:24px}
+.start-btn-title{font-family:var(--syne);font-size:16px;font-weight:800;letter-spacing:-.3px}
+.start-btn-sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:300}
+.start-btn-arrow{font-size:20px;color:var(--accent)}
+
+@media(max-width:1100px){.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:860px){
+  .sidebar{display:none}
+  .topbar,.main{margin-left:0}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .grid2{grid-template-columns:1fr}
+  .grid3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a href="web%20sayfa/index.html" class="sb-logo">YKS<span>KAFA</span></a>
+
+  <div class="sb-section">Ana Menü</div>
+  <a class="sb-item active" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+    Dashboard
+  </a>
+  <a class="sb-item" href="ykskafa_quiz.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 6c0-1.1.9-2 2-2s2 .9 2 2c0 .8-.5 1.5-1.2 1.8L8 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="12" r=".8" fill="currentColor"/></svg>
+    Soru Çöz
+    <span class="sb-badge">5</span>
+  </a>
+  <a class="sb-item" href="ykskafa_solve.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="6.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 2.5l.7-1.5h4.6l.7 1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+    Fotoğrafla Çöz
+  </a>
+  <a class="sb-item" href="ykskafa_ogren.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h5v10H2zM9 3h5v10H9z" stroke="currentColor" stroke-width="1.2"/></svg>
+    Öğren
+  </a>
+  <a class="sb-item" href="ykskafa_kutuphane.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12V4a1 1 0 011-1h10a1 1 0 011 1v8" stroke="currentColor" stroke-width="1.2"/><path d="M1 12h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M6 7h4M8 5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Kütüphane
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 11V5a1 1 0 00-1-1H4a1 1 0 00-1 1v6" stroke="currentColor" stroke-width="1.2"/><path d="M1 11h14M6 11V8M10 11V6M8 11V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Analizler
+  </a>
+
+  <div class="sb-section">Çalışma</div>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Çalışma Planı
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 3V1M11 3V1M2 7h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Takvim
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Notlarım
+  </a>
+
+  <div class="sb-section">Hesap</div>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Profil
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a6 6 0 100 12A6 6 0 008 2z" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v4l2.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Abonelik
+  </a>
+
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar">AY</div>
+      <div>
+        <div class="sb-name">Ahmet Yılmaz</div>
+        <div class="sb-plan">Pro Plan ✦</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title">Dashboard</div>
+  <div class="topbar-right">
+    <div class="streak-pill">🔥 Seri: <span>7</span> gün</div>
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Tema değiştir">🌙</button>
+    <a href="ykskafa_quiz.html" class="btn-primary-sm">+ Soru Çöz</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- GREETING -->
+  <div class="greeting">
+    <div>
+      <div class="greeting-sub">Hoş geldin 👋</div>
+      <div class="greeting-title">Ahmet, bugün 24 soru hedefliyorsun.</div>
+      <div class="greeting-desc">Türkçe ve Matematik zayıf alanların için AI özel sorular hazırladı.</div>
+    </div>
+    <div class="greeting-right">
+      <div class="today-goal">
+        <div class="goal-label">Günlük Hedef</div>
+        <div class="goal-bar-wrap"><div class="goal-bar-fill" id="goal-fill" style="width:37%"></div></div>
+        <div class="goal-text" id="goal-text">9 / 24 soru tamamlandı</div>
+      </div>
+      <a href="ykskafa_quiz.html" class="btn-primary-sm">Devam Et →</a>
+    </div>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card s1">
+      <div class="stat-card-label">Toplam Soru</div>
+      <div class="stat-card-val" style="color:var(--accent2)" id="anim-total">0</div>
+      <div class="stat-card-change">↑ +312 bu hafta</div>
+    </div>
+    <div class="stat-card s2">
+      <div class="stat-card-label">Başarı Oranı</div>
+      <div class="stat-card-val" style="color:var(--accent)" id="anim-acc">0%</div>
+      <div class="stat-card-change">↑ +4% bu hafta</div>
+    </div>
+    <div class="stat-card s3">
+      <div class="stat-card-label">Günlük Seri</div>
+      <div class="stat-card-val" style="color:var(--success)">7🔥</div>
+      <div class="stat-card-change">Rekor: 14 gün</div>
+    </div>
+    <div class="stat-card s4">
+      <div class="stat-card-label">Tahmini Puan</div>
+      <div class="stat-card-val" style="color:var(--accent3)" id="anim-score">0</div>
+      <div class="stat-card-change">↑ +12 bu ay</div>
+    </div>
+  </div>
+
+  <!-- QUICK START + WEEKLY -->
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <a href="ykskafa_quiz.html" class="start-btn">
+        <div class="start-btn-left">
+          <div class="start-btn-icon">🧠</div>
+          <div>
+            <div class="start-btn-title">AI Oturumu Başlat</div>
+            <div class="start-btn-sub">Sana özel 10 soru hazırlandı · Türkçe ağırlıklı</div>
+          </div>
+        </div>
+        <div class="start-btn-arrow">→</div>
+      </a>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Haftalık Soru</div>
+          <span class="card-action">Detay →</span>
+        </div>
+        <div class="chart-wrap" id="weekly-chart"></div>
+        <div style="display:flex;gap:16px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:8px;height:8px;background:var(--success)"></div>Doğru</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:8px;height:8px;background:var(--accent3)"></div>Yanlış</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI INSIGHTS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🧠 AI Analizleri</div>
+        <span class="card-action">Tümü →</span>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon">⚠️</div>
+        <div>
+          <div class="insight-title">Türkçe — Ana Fikir</div>
+          <div class="insight-desc">Son 20 soruda %35 başarı. Ana fikir tespit tekniğini gözden geçirmen gerekiyor.</div>
+          <span class="insight-tag warn">Öncelikli</span>
+        </div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon">📈</div>
+        <div>
+          <div class="insight-title">Matematik — Oran-Orantı</div>
+          <div class="insight-desc">Bu konuda %82 başarı oranına ulaştın. Geçen haftaya göre +18 puan artış.</div>
+          <span class="insight-tag good">İyi Gidiyorsun</span>
+        </div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon">⏰</div>
+        <div>
+          <div class="insight-title">Ortalama Çözüm Süresi</div>
+          <div class="insight-desc">Soru başına 1dk 43sn. Hedef: 1dk 30sn. Türkçe okuma hızın düşürüyor.</div>
+          <span class="insight-tag warn">Hız Geliştir</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBJECT PERFORMANCE + RECENT + UPCOMING -->
+  <div class="grid3">
+
+    <!-- Subject performance -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Konu Başarısı</div>
+        <span class="card-action">Detay →</span>
+      </div>
+      <div id="subject-bars"></div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Son Aktivite</div>
+        <span class="card-action">Tümü →</span>
+      </div>
+      <div class="activity-item">
+        <div class="act-dot" style="background:var(--success)"></div>
+        <div class="act-text"><strong>Türkçe</strong> — 12 soru çözüldü</div>
+        <div class="act-score" style="color:var(--success)">%75</div>
+        <div class="act-time">2sa</div>
+      </div>
+      <div class="activity-item">
+        <div class="act-dot" style="background:var(--accent2)"></div>
+        <div class="act-text"><strong>Matematik</strong> — 8 soru</div>
+        <div class="act-score" style="color:var(--accent2)">%87</div>
+        <div class="act-time">5sa</div>
+      </div>
+      <div class="activity-item">
+        <div class="act-dot" style="background:var(--accent3)"></div>
+        <div class="act-text"><strong>Tarih</strong> — 6 soru</div>
+        <div class="act-score" style="color:var(--accent3)">%50</div>
+        <div class="act-time">Dün</div>
+      </div>
+      <div class="activity-item">
+        <div class="act-dot" style="background:var(--success)"></div>
+        <div class="act-text"><strong>Fizik</strong> — 15 soru</div>
+        <div class="act-score" style="color:var(--success)">%80</div>
+        <div class="act-time">Dün</div>
+      </div>
+      <div class="activity-item">
+        <div class="act-dot" style="background:var(--accent2)"></div>
+        <div class="act-text"><strong>Kimya</strong> — 10 soru</div>
+        <div class="act-score" style="color:var(--accent2)">%70</div>
+        <div class="act-time">2 gün</div>
+      </div>
+    </div>
+
+    <!-- Upcoming -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Çalışma Planı</div>
+        <span class="card-action">Düzenle →</span>
+      </div>
+      <div class="upcoming-item">
+        <div class="up-day">BUG</div>
+        <div class="up-content">
+          <div class="up-title">Türkçe — Ana Fikir</div>
+          <div class="up-sub">20 soru · ~30dk</div>
+        </div>
+        <div class="up-badge priority">Öncelik</div>
+      </div>
+      <div class="upcoming-item">
+        <div class="up-day">BUG</div>
+        <div class="up-content">
+          <div class="up-title">Matematik — 2. Derece Denklem</div>
+          <div class="up-sub">15 soru · ~25dk</div>
+        </div>
+        <div class="up-badge">Normal</div>
+      </div>
+      <div class="upcoming-item">
+        <div class="up-day">YRN</div>
+        <div class="up-content">
+          <div class="up-title">Tarih — Cumhuriyet Dönemi</div>
+          <div class="up-sub">12 soru · ~20dk</div>
+        </div>
+        <div class="up-badge">Normal</div>
+      </div>
+      <div class="upcoming-item">
+        <div class="up-day">YRN</div>
+        <div class="up-content">
+          <div class="up-title">Fizik — Hareket</div>
+          <div class="up-sub">18 soru · ~35dk</div>
+        </div>
+        <div class="up-badge">Normal</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── THEME ──
+(function(){
+  const saved = localStorage.getItem('ykskafa-theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+function toggleTheme(){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('ykskafa-theme','dark'); document.getElementById('theme-btn').textContent='🌙'; }
+  else { document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('ykskafa-theme','light'); document.getElementById('theme-btn').textContent='☀️'; }
+}
+document.getElementById('theme-btn').textContent = document.documentElement.getAttribute('data-theme')==='light' ? '☀️' : '🌙';
+
+// ── ANIMATED COUNTERS ──
+function animCount(id, target, suffix='', duration=1200) {
+  const el = document.getElementById(id);
+  const start = performance.now();
+  function update(now) {
+    const t = Math.min((now-start)/duration, 1);
+    const ease = 1 - Math.pow(1-t, 3);
+    el.textContent = Math.round(ease * target) + suffix;
+    if (t < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+setTimeout(() => {
+  animCount('anim-total', 2847);
+  animCount('anim-acc', 73, '%');
+  animCount('anim-score', 348);
+}, 300);
+
+// ── WEEKLY CHART ──
+const days = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+const correct = [18,24,31,22,28,35,9];
+const wrong = [6,8,7,10,5,9,3];
+const maxVal = Math.max(...correct.map((c,i)=>c+wrong[i]));
+const chart = document.getElementById('weekly-chart');
+days.forEach((day,i) => {
+  const total = correct[i] + wrong[i];
+  const cH = Math.round((correct[i]/maxVal)*90);
+  const wH = Math.round((wrong[i]/maxVal)*90);
+  const isToday = i===6;
+  chart.innerHTML += `
+    <div class="chart-bar-group">
+      <div class="chart-total" style="color:${isToday?'var(--accent)':'var(--muted)'}">${total}</div>
+      <div class="chart-bar-stack">
+        <div class="chart-bar" style="height:${wH}px;background:var(--accent3);opacity:${isToday?1:.6}"></div>
+        <div class="chart-bar" style="height:${cH}px;background:var(--success);opacity:${isToday?1:.6}"></div>
+      </div>
+      <div class="chart-label" style="color:${isToday?'var(--accent)':'var(--muted)'};font-weight:${isToday?700:400}">${day}</div>
+    </div>`;
+});
+
+// ── SUBJECT BARS ──
+const subjects = [
+  {name:'Türkçe', pct:62, color:'#7c6af7', trend:'↑+5'},
+  {name:'Matematik', pct:81, color:'#c8f53c', trend:'↑+8'},
+  {name:'Tarih', pct:48, color:'#f53c7a', trend:'↓-2'},
+  {name:'Coğrafya', pct:71, color:'#f5a23c', trend:'↑+3'},
+  {name:'Fizik', pct:76, color:'#3cf5e8', trend:'↑+6'},
+  {name:'Kimya', pct:69, color:'#f53caa', trend:'↑+1'},
+  {name:'Biyoloji', pct:73, color:'#3cf58a', trend:'↑+4'},
+];
+const barsEl = document.getElementById('subject-bars');
+subjects.forEach(s => {
+  barsEl.innerHTML += `
+    <div class="subject-row">
+      <div class="subj-name" style="font-size:12px">${s.name}</div>
+      <div class="subj-bar-wrap"><div class="subj-bar" style="width:0%;background:${s.color}" data-pct="${s.pct}"></div></div>
+      <div class="subj-pct" style="color:${s.color};font-size:12px">${s.pct}%</div>
+      <div class="subj-trend" style="font-size:10px;color:${s.trend.startsWith('↑')?'var(--success)':'var(--accent3)'}">${s.trend}</div>
+    </div>`;
+});
+setTimeout(() => {
+  document.querySelectorAll('.subj-bar').forEach(b => {
+    b.style.width = b.dataset.pct + '%';
+  });
+}, 200);
+</script>
+</body>
+</html>

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="N8N Admin Panel - YKS Hazırlık Platformu">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>N8N Admin Panel - YKS Hazırlık Platformu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .admin-card h2 {
+            margin: 0 0 20px 0;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .status-badge.active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .status-badge.inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #475569;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 13px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #2563eb;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .test-results {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .test-results.success {
+            border-left-color: #16a34a;
+            background: #f0fdf4;
+        }
+        
+        .test-results.error {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        
+        .info-box i {
+            color: #2563eb;
+            margin-right: 8px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2563eb;
+            margin: 8px 0;
+        }
+        
+        .stat-card .stat-label {
+            color: #64748b;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <span>N8N Admin</span>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-home"></i> Ana Sayfa
+                    </a>
+                    <a href="n8n-admin.html" class="nav-link active">
+                        <i class="fas fa-cog"></i> N8N Ayarları
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="admin-container">
+        <!-- Status Card -->
+        <div class="admin-card">
+            <h2>
+                <i class="fas fa-signal"></i>
+                N8N Bağlantı Durumu
+                <span id="statusBadge" class="status-badge inactive">
+                    <i class="fas fa-circle"></i>
+                    Devre Dışı
+                </span>
+            </h2>
+            
+            <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                N8N entegrasyonu, GPT-4o ile otomatik soru üretimi için gereklidir. Detaylı kurulum için 
+                <a href="N8N_SETUP_GUIDE.md" target="_blank" style="color: #2563eb; font-weight: 600;">N8N_SETUP_GUIDE.md</a> 
+                dosyasını okuyun.
+            </div>
+            
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-label">N8N Durumu</div>
+                    <div class="stat-value" id="n8nStatus">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Toplam İstek</div>
+                    <div class="stat-value" id="totalRequests">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Başarılı</div>
+                    <div class="stat-value" style="color: #16a34a;" id="successCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Başarısız</div>
+                    <div class="stat-value" style="color: #dc2626;" id="errorCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Card -->
+        <div class="admin-card">
+            <h2>
+                <i class="fas fa-sliders-h"></i>
+                N8N Konfigürasyonu
+            </h2>
+            
+            <form id="n8nConfigForm">
+                <div class="form-group">
+                    <label>
+                        N8N Entegrasyonu
+                        <label class="toggle-switch" style="float: right;">
+                            <input type="checkbox" id="n8nEnabled">
+                            <span class="slider"></span>
+                        </label>
+                    </label>
+                    <small>N8N entegrasyonunu aktif/pasif yapın</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="n8nBaseUrl">N8N Instance URL</label>
+                    <input 
+                        type="url" 
+                        id="n8nBaseUrl" 
+                        placeholder="https://your-n8n-instance.com"
+                        required
+                    >
+                    <small>N8N instance'ınızın base URL'i (örn: https://n8n.example.com)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="webhookPath">Webhook Path</label>
+                    <input 
+                        type="text" 
+                        id="webhookPath" 
+                        placeholder="/webhook/generate-question"
+                        required
+                    >
+                    <small>Soru üretim webhook'unuzun path'i</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="timeout">Timeout (milisaniye)</label>
+                    <input 
+                        type="number" 
+                        id="timeout" 
+                        placeholder="30000"
+                        min="5000"
+                        max="60000"
+                        required
+                    >
+                    <small>API istekleri için maksimum bekleme süresi</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        Fallback Modu
+                        <label class="toggle-switch" style="float: right;">
+                            <input type="checkbox" id="useFallback" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </label>
+                    <small>N8N hatası durumunda yerel örnek sorular kullan</small>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Kaydet
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="resetBtn">
+                        <i class="fas fa-undo"></i>
+                        Sıfırla
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Test Card -->
+        <div class="admin-card">
+            <h2>
+                <i class="fas fa-vial"></i>
+                Bağlantı Testi
+            </h2>
+            
+            <p style="color: #64748b; margin-bottom: 20px;">
+                N8N bağlantınızı test edin ve örnek bir soru üretimi yapın.
+            </p>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" id="testConnectionBtn">
+                    <i class="fas fa-plug"></i>
+                    Bağlantı Testi
+                </button>
+                <button class="btn btn-primary" id="testQuestionBtn">
+                    <i class="fas fa-magic"></i>
+                    Örnek Soru Üret
+                </button>
+            </div>
+            
+            <div id="testResults" style="display: none;">
+                <!-- Test results will be shown here -->
+            </div>
+        </div>
+
+        <!-- Documentation Card -->
+        <div class="admin-card">
+            <h2>
+                <i class="fas fa-book"></i>
+                Dokümantasyon
+            </h2>
+            
+            <p style="color: #64748b; margin-bottom: 20px;">
+                N8N kurulumu ve kullanımı hakkında detaylı bilgi:
+            </p>
+            
+            <div class="btn-group">
+                <a href="N8N_SETUP_GUIDE.md" target="_blank" class="btn btn-primary">
+                    <i class="fas fa-file-alt"></i>
+                    N8N Kurulum Rehberi
+                </a>
+                <a href="n8n-workflows.json" download class="btn btn-secondary">
+                    <i class="fas fa-download"></i>
+                    Workflow JSON İndir
+                </a>
+            </div>
+            
+            <div class="info-box" style="margin-top: 20px;">
+                <strong>Hızlı Başlangıç:</strong>
+                <ol style="margin: 12px 0 0 20px; color: #475569;">
+                    <li>N8N Cloud'da ücretsiz hesap oluşturun: <a href="https://n8n.cloud" target="_blank">n8n.cloud</a></li>
+                    <li>Workflow JSON dosyasını import edin</li>
+                    <li>OpenAI API Key'inizi environment variables'a ekleyin</li>
+                    <li>Webhook URL'inizi bu panelden yapılandırın</li>
+                    <li>Test edin ve kullanmaya başlayın! 🚀</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/n8n-config.js"></script>
+    <script>
+        // Load current configuration
+        function loadConfig() {
+            document.getElementById('n8nEnabled').checked = N8N_CONFIG.enabled;
+            document.getElementById('n8nBaseUrl').value = N8N_CONFIG.baseUrl;
+            document.getElementById('webhookPath').value = N8N_CONFIG.endpoints.generateQuestion;
+            document.getElementById('timeout').value = N8N_CONFIG.timeout;
+            document.getElementById('useFallback').checked = N8N_CONFIG.useFallback;
+            
+            updateStatus();
+        }
+        
+        // Update status badge
+        function updateStatus() {
+            const statusBadge = document.getElementById('statusBadge');
+            const n8nStatus = document.getElementById('n8nStatus');
+            
+            if (N8N_CONFIG.enabled) {
+                statusBadge.className = 'status-badge active';
+                statusBadge.innerHTML = '<i class="fas fa-circle"></i> Aktif';
+                n8nStatus.innerHTML = '<i class="fas fa-check-circle" style="color: #16a34a;"></i>';
+            } else {
+                statusBadge.className = 'status-badge inactive';
+                statusBadge.innerHTML = '<i class="fas fa-circle"></i> Devre Dışı';
+                n8nStatus.innerHTML = '<i class="fas fa-times-circle" style="color: #dc2626;"></i>';
+            }
+        }
+        
+        // Save configuration
+        document.getElementById('n8nConfigForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            N8N_CONFIG.enabled = document.getElementById('n8nEnabled').checked;
+            N8N_CONFIG.baseUrl = document.getElementById('n8nBaseUrl').value;
+            N8N_CONFIG.endpoints.generateQuestion = document.getElementById('webhookPath').value;
+            N8N_CONFIG.timeout = parseInt(document.getElementById('timeout').value);
+            N8N_CONFIG.useFallback = document.getElementById('useFallback').checked;
+            
+            // Save to localStorage
+            localStorage.setItem('n8n_config', JSON.stringify(N8N_CONFIG));
+            
+            updateStatus();
+            showAlert('Ayarlar başarıyla kaydedildi! ✅', 'success');
+        });
+        
+        // Reset configuration
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            if (confirm('Ayarları sıfırlamak istediğinizden emin misiniz?')) {
+                localStorage.removeItem('n8n_config');
+                location.reload();
+            }
+        });
+        
+        // Test connection
+        document.getElementById('testConnectionBtn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Test ediliyor...';
+            
+            try {
+                const result = await n8nClient.testConnection();
+                showTestResult(result);
+            } catch (error) {
+                showTestResult({
+                    success: false,
+                    message: 'Bağlantı başarısız: ' + error.message
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plug"></i> Bağlantı Testi';
+            }
+        });
+        
+        // Test question generation
+        document.getElementById('testQuestionBtn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Üretiliyor...';
+            
+            try {
+                const question = await n8nClient.generateQuestion('TYT', 'Matematik', 'Sayılar', 'Kolay');
+                showTestResult({
+                    success: true,
+                    message: 'Soru başarıyla ürüldü!',
+                    data: question
+                });
+            } catch (error) {
+                showTestResult({
+                    success: false,
+                    message: 'Soru üretimi başarısız: ' + error.message
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> Örnek Soru Üret';
+            }
+        });
+        
+        // Show test result
+        function showTestResult(result) {
+            const testResults = document.getElementById('testResults');
+            testResults.style.display = 'block';
+            
+            const className = result.success ? 'success' : 'error';
+            const icon = result.success ? 'fa-check-circle' : 'fa-times-circle';
+            
+            let html = `
+                <div class="test-results ${className}">
+                    <h3 style="margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas ${icon}"></i>
+                        ${result.message}
+                    </h3>
+            `;
+            
+            if (result.data) {
+                html += `<div class="code-block">${JSON.stringify(result.data, null, 2)}</div>`;
+            }
+            
+            html += '</div>';
+            testResults.innerHTML = html;
+        }
+        
+        // Alert helper
+        function showAlert(message, type) {
+            alert(message);
+        }
+        
+        // Load saved config from localStorage
+        const savedConfig = localStorage.getItem('n8n_config');
+        if (savedConfig) {
+            Object.assign(N8N_CONFIG, JSON.parse(savedConfig));
+        }
+        
+        // Initialize
+        loadConfig();
+    </script>
+</body>
+</html>

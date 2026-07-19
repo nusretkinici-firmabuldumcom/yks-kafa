@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Soru Çöz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080810;
+  --surface: #0e0e1a;
+  --surface2: #13131f;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f2f0ff;
+  --muted: #8b89a8;
+  --accent: #c8f53c;
+  --accent2: #7c6af7;
+  --accent3: #f53c7a;
+  --success: #3cf58a;
+  --nav-bg: rgba(8,8,16,0.9);
+  --overlay-bg: rgba(8,8,16,.96);
+  --syne: 'Syne', sans-serif;
+  --dm: 'DM Sans', sans-serif;
+}
+[data-theme="light"]{--bg:#f4f3fa;--surface:#ffffff;--surface2:#f0eefa;--border:rgba(20,16,40,0.08);--border2:rgba(20,16,40,0.14);--text:#161426;--muted:#6b6885;--nav-bg:rgba(255,255,255,.85);--overlay-bg:rgba(244,243,250,.96)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--dm);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;transition:background .25s ease,color .25s ease}
+
+/* grid bg */
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,106,247,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(124,106,247,0.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+
+/* ── TOP NAV ── */
+.topnav{position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px}
+.nav-left{display:flex;align-items:center;gap:20px}
+.nav-links{display:flex;align-items:center;gap:4px;margin-left:12px}
+.nav-links a{font-size:13px;color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:2px;transition:all .2s}
+.nav-links a:hover{color:var(--text);background:rgba(124,106,247,.08)}
+.nav-links a.active{color:var(--accent2);background:rgba(124,106,247,.1)}
+.theme-toggle{width:34px;height:34px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent2)}
+@media(max-width:960px){.nav-links{display:none}}
+.logo{font-family:var(--syne);font-size:18px;font-weight:800;letter-spacing:-1px;text-decoration:none;color:var(--text)}
+.logo span{color:var(--accent)}
+.nav-session{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.session-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-streak{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:5px 12px}
+.nav-streak span{color:var(--accent);font-family:var(--syne);font-weight:700}
+.nav-timer{font-family:var(--syne);font-size:15px;font-weight:800;letter-spacing:1px;color:var(--text);background:var(--surface2);border:1px solid var(--border2);padding:5px 14px}
+.nav-timer.warn{color:var(--accent3);border-color:rgba(245,60,122,0.3)}
+.btn-end{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:var(--dm);font-size:13px;padding:6px 16px;cursor:pointer;transition:all .2s}
+.btn-end:hover{border-color:var(--accent3);color:var(--accent3)}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{position:sticky;top:56px;z-index:99;background:rgba(8,8,16,0.95);padding:12px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px}
+.progress-track{flex:1;height:3px;background:var(--border2);position:relative}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .5s cubic-bezier(.4,0,.2,1)}
+.progress-label{font-size:12px;color:var(--muted);white-space:nowrap}
+.progress-label strong{color:var(--text);font-weight:500}
+.q-dots{display:flex;gap:4px;flex-wrap:wrap}
+.q-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:all .3s;cursor:pointer}
+.q-dot.done{background:var(--accent2)}
+.q-dot.correct{background:var(--success)}
+.q-dot.wrong{background:var(--accent3)}
+.q-dot.active{background:var(--accent);box-shadow:0 0 6px rgba(200,245,60,.5)}
+
+/* ── MAIN LAYOUT ── */
+.main{position:relative;z-index:1;flex:1;display:grid;grid-template-columns:1fr 360px;gap:0;max-width:1280px;margin:0 auto;width:100%;padding:32px 28px;gap:24px}
+@media(max-width:960px){.main{grid-template-columns:1fr}.right-col{display:none}}
+
+/* ── QUESTION CARD ── */
+.q-card{background:var(--surface);border:1px solid var(--border);padding:40px 44px;display:flex;flex-direction:column;gap:32px;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.q-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.q-badge{font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border:1px solid}
+.q-badge.subject{border-color:rgba(124,106,247,.35);color:var(--accent2);background:rgba(124,106,247,.07)}
+.q-badge.difficulty-easy{border-color:rgba(60,245,138,.3);color:var(--success)}
+.q-badge.difficulty-med{border-color:rgba(245,162,60,.3);color:#f5a23c}
+.q-badge.difficulty-hard{border-color:rgba(245,60,122,.3);color:var(--accent3)}
+.q-num{font-size:12px;color:var(--muted);margin-left:auto}
+
+.q-text{font-size:18px;line-height:1.75;font-weight:300;color:var(--text)}
+.q-text strong{font-weight:500;color:var(--accent)}
+
+/* Image/passage container */
+.q-passage{background:var(--surface2);border:1px solid var(--border);padding:20px 24px;font-size:14px;color:var(--muted);line-height:1.8;font-weight:300;font-style:italic;border-left:3px solid var(--accent2)}
+
+/* Options */
+.options{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border:1px solid var(--border2);background:transparent;cursor:pointer;transition:all .2s;text-align:left;width:100%;color:var(--text);font-family:var(--dm);position:relative;overflow:hidden}
+.opt::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,106,247,.05),transparent);opacity:0;transition:opacity .2s}
+.opt:hover{border-color:rgba(124,106,247,.4);background:rgba(124,106,247,.04)}
+.opt:hover::before{opacity:1}
+.opt.selected{border-color:var(--accent2);background:rgba(124,106,247,.07)}
+.opt.correct{border-color:var(--success)!important;background:rgba(60,245,138,.06)!important}
+.opt.wrong{border-color:var(--accent3)!important;background:rgba(245,60,122,.06)!important}
+.opt-letter{font-family:var(--syne);font-size:13px;font-weight:800;width:28px;height:28px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.opt.selected .opt-letter{border-color:var(--accent2);color:var(--accent2)}
+.opt.correct .opt-letter{border-color:var(--success);color:var(--success);background:rgba(60,245,138,.1)}
+.opt.wrong .opt-letter{border-color:var(--accent3);color:var(--accent3);background:rgba(245,60,122,.1)}
+.opt-text{font-size:15px;line-height:1.6;font-weight:300;padding-top:2px}
+.opt-icon{margin-left:auto;flex-shrink:0;opacity:0;transition:opacity .2s}
+.opt.correct .opt-icon,.opt.wrong .opt-icon{opacity:1}
+
+/* Action row */
+.action-row{display:flex;align-items:center;justify-content:space-between;padding-top:8px}
+.btn-action{font-family:var(--dm);font-size:14px;font-weight:500;padding:12px 28px;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.btn-confirm{background:var(--accent2);color:#fff}
+.btn-confirm:hover{opacity:.88;transform:translateY(-1px)}
+.btn-confirm:disabled{opacity:.35;pointer-events:none}
+.btn-next{background:var(--accent);color:#080810}
+.btn-next:hover{opacity:.88;transform:translateY(-1px)}
+.btn-skip{background:transparent;border:1px solid var(--border2);color:var(--muted)}
+.btn-skip:hover{color:var(--text);border-color:var(--border)}
+.btn-flag{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:12px 14px}
+.btn-flag:hover{border-color:#f5a23c;color:#f5a23c}
+.btn-flag.flagged{border-color:#f5a23c;color:#f5a23c;background:rgba(245,162,60,.07)}
+
+/* ── AI EXPLANATION ── */
+.ai-box{background:var(--surface2);border:1px solid rgba(124,106,247,.2);padding:24px 28px;display:none;animation:fadeIn .35s ease}
+.ai-box.show{display:block}
+.ai-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.ai-icon{width:28px;height:28px;background:rgba(124,106,247,.15);border:1px solid rgba(124,106,247,.3);display:flex;align-items:center;justify-content:center;font-size:14px}
+.ai-title{font-family:var(--syne);font-size:14px;font-weight:800;letter-spacing:-.3px;color:var(--accent2)}
+.ai-typing{font-size:14px;line-height:1.8;color:var(--muted);font-weight:300}
+.ai-typing strong{color:var(--text);font-weight:400}
+.ai-typing .highlight{color:var(--accent);font-weight:400}
+.ai-tags{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.ai-tag{font-size:11px;padding:3px 10px;border:1px solid var(--border2);color:var(--muted);letter-spacing:.5px}
+
+/* ── RIGHT COLUMN ── */
+.right-col{display:flex;flex-direction:column;gap:16px}
+
+/* Subject filter */
+.filter-card{background:var(--surface);border:1px solid var(--border);padding:20px}
+.card-title{font-family:var(--syne);font-size:13px;font-weight:800;letter-spacing:-.2px;margin-bottom:14px;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:1px}
+.subject-list{display:flex;flex-direction:column;gap:6px}
+.subject-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid transparent;cursor:pointer;transition:all .2s;font-size:13px;color:var(--muted)}
+.subject-item:hover{border-color:var(--border2);color:var(--text)}
+.subject-item.active{border-color:rgba(124,106,247,.35);color:var(--accent2);background:rgba(124,106,247,.05)}
+.subject-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.subject-count{margin-left:auto;font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:2px 7px}
+
+/* Session stats */
+.stats-card{background:var(--surface);border:1px solid var(--border);padding:20px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.stat-cell{background:var(--surface);padding:14px 16px}
+.stat-val{font-family:var(--syne);font-size:22px;font-weight:800;letter-spacing:-1px}
+.stat-val.green{color:var(--success)}
+.stat-val.red{color:var(--accent3)}
+.stat-val.purple{color:var(--accent2)}
+.stat-label{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* AI tip card */
+.tip-card{background:rgba(124,106,247,.06);border:1px solid rgba(124,106,247,.18);padding:20px}
+.tip-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.tip-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:blink 2s infinite}
+.tip-title{font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--accent2)}
+.tip-text{font-size:13px;color:var(--muted);line-height:1.7;font-weight:300}
+
+/* ── RESULT OVERLAY ── */
+.result-overlay{position:fixed;inset:0;z-index:200;background:var(--overlay-bg);display:none;align-items:center;justify-content:center;backdrop-filter:blur(16px)}
+.result-overlay.show{display:flex}
+.result-box{background:var(--surface);border:1px solid var(--border);padding:56px 64px;max-width:560px;width:90%;text-align:center;position:relative;animation:fadeIn .4s ease}
+.result-emoji{font-size:52px;margin-bottom:20px}
+.result-title{font-family:var(--syne);font-size:42px;font-weight:800;letter-spacing:-2px;margin-bottom:8px}
+.result-sub{font-size:15px;color:var(--muted);font-weight:300;margin-bottom:40px;line-height:1.6}
+.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin-bottom:40px}
+.rs-cell{background:var(--surface2);padding:20px}
+.rs-val{font-family:var(--syne);font-size:28px;font-weight:800;letter-spacing:-1.5px}
+.rs-label{font-size:11px;color:var(--muted);margin-top:4px}
+.result-actions{display:flex;gap:12px;justify-content:center}
+.btn-again{background:var(--accent);color:#080810;font-family:var(--dm);font-size:14px;font-weight:500;padding:13px 28px;border:none;cursor:pointer;transition:all .2s}
+.btn-again:hover{opacity:.88}
+.btn-dash{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:var(--dm);font-size:14px;padding:13px 24px;cursor:pointer;transition:all .2s}
+.btn-dash:hover{color:var(--text);border-color:var(--border)}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="nav-left">
+    <a href="web%20sayfa/index.html" class="logo">YKS<span>KAFA</span></a>
+    <div class="nav-session">
+      <div class="session-dot"></div>
+      AI Oturum Aktif
+    </div>
+    <div class="nav-links">
+      <a href="ykskafa_dashboard.html">Dashboard</a>
+      <a href="ykskafa_quiz.html" class="active">Soru Çöz</a>
+      <a href="ykskafa_solve.html">Fotoğrafla Çöz</a>
+      <a href="ykskafa_ogren.html">Öğren</a>
+      <a href="ykskafa_kutuphane.html">Kütüphane</a>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-streak">🔥 Seri: <span id="streak-count">7</span> gün</div>
+    <div class="nav-timer" id="timer">02:00</div>
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Tema değiştir">🌙</button>
+    <button class="btn-end" onclick="endSession()">Oturumu Bitir</button>
+  </div>
+</nav>
+
+<!-- PROGRESS BAR -->
+<div class="progress-wrap">
+  <div class="q-dots" id="q-dots"></div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:10%"></div>
+  </div>
+  <div class="progress-label"><strong id="q-current">1</strong> / <span id="q-total">10</span></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT: QUESTION CARD -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="q-card" id="q-card">
+
+      <!-- Meta -->
+      <div class="q-meta">
+        <span class="q-badge subject" id="q-subject">Türkçe</span>
+        <span class="q-badge" id="q-difficulty">Orta</span>
+        <span class="q-num" id="q-num">Soru 1</span>
+      </div>
+
+      <!-- Passage (optional) -->
+      <div class="q-passage" id="q-passage" style="display:none"></div>
+
+      <!-- Question text -->
+      <div class="q-text" id="q-text"></div>
+
+      <!-- Options -->
+      <div class="options" id="options"></div>
+
+      <!-- Action row -->
+      <div class="action-row">
+        <div style="display:flex;gap:8px">
+          <button class="btn-action btn-skip" id="btn-skip" onclick="skipQuestion()">Atla</button>
+          <button class="btn-action btn-flag" id="btn-flag" onclick="flagQuestion()" title="İşaretle">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 1v12M2 1h8l-2 3.5L10 8H2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <button class="btn-action btn-confirm" id="btn-confirm" onclick="confirmAnswer()" disabled>
+          Cevapla
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="btn-action btn-next" id="btn-next" onclick="nextQuestion()" style="display:none">
+          Sonraki Soru
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Explanation -->
+    <div class="ai-box" id="ai-box">
+      <div class="ai-header">
+        <div class="ai-icon">🧠</div>
+        <div class="ai-title">AI Açıklaması</div>
+      </div>
+      <div class="ai-typing" id="ai-text"></div>
+      <div class="ai-tags" id="ai-tags"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+
+    <!-- Subject filter -->
+    <div class="filter-card">
+      <div class="card-title">Konu Filtresi</div>
+      <div class="subject-list" id="subject-list"></div>
+    </div>
+
+    <!-- Real curriculum topics for active subject -->
+    <div class="filter-card">
+      <div class="card-title" id="topics-title">Türkçe Konuları (TYT/AYT)</div>
+      <div class="ai-tags" id="topics-list" style="margin-top:0"></div>
+    </div>
+
+    <!-- Session stats -->
+    <div class="stats-card">
+      <div class="card-title">Bu Oturum</div>
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <div class="stat-val green" id="stat-correct">0</div>
+          <div class="stat-label">Doğru</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-val red" id="stat-wrong">0</div>
+          <div class="stat-label">Yanlış</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-val purple" id="stat-skipped">0</div>
+          <div class="stat-label">Atlanan</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-val" id="stat-accuracy">—</div>
+          <div class="stat-label">Başarı %</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI tip -->
+    <div class="tip-card">
+      <div class="tip-header">
+        <div class="tip-dot"></div>
+        <div class="tip-title">AI İpucu</div>
+      </div>
+      <div class="tip-text" id="ai-tip">Türkçe sorularında önce seçenekleri oku, sonra metne dön. Bu yöntem ortalama çözüm süresini %30 düşürür.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div class="result-overlay" id="result-overlay">
+  <div class="result-box">
+    <div class="result-emoji" id="res-emoji">🎯</div>
+    <div class="result-title" id="res-title">Harika!</div>
+    <div class="result-sub" id="res-sub">Bu oturumu tamamladın. Performansın aşağıda.</div>
+    <div class="result-stats">
+      <div class="rs-cell">
+        <div class="rs-val" style="color:var(--success)" id="res-correct">0</div>
+        <div class="rs-label">Doğru</div>
+      </div>
+      <div class="rs-cell">
+        <div class="rs-val" style="color:var(--accent3)" id="res-wrong">0</div>
+        <div class="rs-label">Yanlış</div>
+      </div>
+      <div class="rs-cell">
+        <div class="rs-val" style="color:var(--accent)" id="res-acc">0%</div>
+        <div class="rs-label">Başarı</div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-again" onclick="restartSession()">Tekrar Başla</button>
+      <button class="btn-dash" onclick="window.location='ykskafa_dashboard.html'">Dashboard'a Git</button>
+    </div>
+  </div>
+</div>
+
+<script src="konu_listesi.js"></script>
+<script>
+// ── THEME ──
+(function(){
+  const saved = localStorage.getItem('ykskafa-theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+function toggleTheme(){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('ykskafa-theme','dark'); document.getElementById('theme-btn').textContent='🌙'; }
+  else { document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('ykskafa-theme','light'); document.getElementById('theme-btn').textContent='☀️'; }
+}
+document.getElementById('theme-btn').textContent = document.documentElement.getAttribute('data-theme')==='light' ? '☀️' : '🌙';
+
+// ── QUESTION BANK ──
+const questions = [
+  {
+    subject:'Türkçe', difficulty:'Orta',
+    passage: 'Bir sanat eserinin kalıcılığı, onu yaratan toplumun değerleriyle doğrudan ilişkilidir. Bireysel deha önemli olsa da toplumsal zemin olmadan büyük eserler yeşeremez.',
+    text: 'Bu parçada asıl anlatılmak istenen nedir?',
+    opts:['Sanat eserleri bireysel dehanın ürünüdür','Kalıcı sanat ancak toplumsal ortamla mümkündür','Toplumlar sanatçıyı yönlendirir','Deha ile toplum çatışma içindedir'],
+    correct:1,
+    explanation:'Metin, bireysel dehayı inkâr etmez; ancak <strong>kalıcılık</strong> için toplumsal zemini zorunlu görür. Cevap B — "Kalıcı sanat ancak toplumsal ortamla mümkündür."',
+    tags:['Ana Fikir','Paragraf Anlama','TYT Türkçe']
+  },
+  {
+    subject:'Matematik', difficulty:'Kolay',
+    text: 'Bir öğrenci 5 günde 120 soru çözüyor. Aynı hızla <strong>8 günde</strong> kaç soru çözer?',
+    opts:['168','176','192','200'],
+    correct:2,
+    explanation:'Günlük oran: 120 ÷ 5 = <span class="highlight">24 soru/gün</span>. 8 gün × 24 = <strong>192 soru</strong>. Doğru cevap C.',
+    tags:['Oran-Orantı','TYT Matematik','Temel İşlem']
+  },
+  {
+    subject:'Tarih', difficulty:'Zor',
+    text: 'Türkiye\'de çok partili siyasi hayata geçişin en belirleyici adımı hangisidir?',
+    opts:['1924 Anayasası\'nın kabulü','Terakkiperver Cumhuriyet Fırkası\'nın kurulması','1946\'da genel seçimlerin yapılması','Demokrat Parti\'nin 1950 seçimlerini kazanması'],
+    correct:3,
+    explanation:'1946\'da seçimler yapılmış olsa da iktidar el değiştirmemişti. <strong>1950 seçimleri</strong> gerçek anlamda çok partili demokratik geçişi simgeler — DP CHP\'yi devirdi.',
+    tags:['Türkiye Cumhuriyeti','Demokratikleşme','AYT Tarih']
+  },
+  {
+    subject:'Türkçe', difficulty:'Orta',
+    text: 'Aşağıdakilerden hangisi anlatımda <strong>nesnel</strong> bir ifadedir?',
+    opts:['"Bu roman çok sıkıcı."','"Romanda 340 sayfa var."','"Yazar harika bir üslup kullanmış."','"Bu kitabı herkes sevecek."'],
+    correct:1,
+    explanation:'"340 sayfa" ölçülebilir, doğrulanabilir bir bilgidir — bu <strong>nesnel</strong> ifadedir. Diğer seçenekler yorum veya yargı içerir.',
+    tags:['Nesnel-Öznel','Anlatım Biçimleri','TYT Türkçe']
+  },
+  {
+    subject:'Matematik', difficulty:'Orta',
+    text: 'x² − 5x + 6 = 0 denkleminin kökleri toplamı kaçtır?',
+    opts:['2','3','5','6'],
+    correct:2,
+    explanation:'Vieta formülleri: kökler toplamı = <span class="highlight">−(b/a) = −(−5)/1 = 5</span>. Kökleri doğrulayalım: x=2 ve x=3, toplamları = 5. Cevap C.',
+    tags:['2.Derece Denklem','Vieta','AYT Matematik']
+  },
+];
+
+// ── STATE ──
+let qIndex = 0;
+let selectedOpt = null;
+let answered = false;
+let flagged = false;
+let stats = { correct:0, wrong:0, skipped:0 };
+let dotStates = Array(questions.length).fill('');
+let timerSec = 120;
+let timerInterval;
+
+// ── INIT ──
+function init() {
+  // Build dots
+  const dotsEl = document.getElementById('q-dots');
+  dotsEl.innerHTML = '';
+  questions.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'q-dot' + (i===0?' active':'');
+    d.id = 'dot-'+i;
+    d.onclick = () => jumpTo(i);
+    dotsEl.appendChild(d);
+  });
+  document.getElementById('q-total').textContent = questions.length;
+  loadQuestion(0);
+  startTimer();
+}
+
+function loadQuestion(idx) {
+  const q = questions[idx];
+  qIndex = idx;
+  selectedOpt = null;
+  answered = false;
+  flagged = false;
+
+  // Meta
+  document.getElementById('q-subject').textContent = q.subject;
+  const diffEl = document.getElementById('q-difficulty');
+  diffEl.textContent = q.difficulty;
+  diffEl.className = 'q-badge difficulty-' + ({Kolay:'easy',Orta:'med',Zor:'hard'}[q.difficulty]||'med');
+  document.getElementById('q-num').textContent = `Soru ${idx+1}`;
+  document.getElementById('q-current').textContent = idx+1;
+
+  // Passage
+  const passEl = document.getElementById('q-passage');
+  if (q.passage) { passEl.textContent = q.passage; passEl.style.display='block'; }
+  else passEl.style.display='none';
+
+  // Text
+  document.getElementById('q-text').innerHTML = q.text;
+
+  // Options
+  const optsEl = document.getElementById('options');
+  optsEl.innerHTML = '';
+  const letters = ['A','B','C','D','E'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.onclick = () => selectOpt(i);
+    btn.id = 'opt-'+i;
+    btn.innerHTML = `
+      <span class="opt-letter">${letters[i]}</span>
+      <span class="opt-text">${opt}</span>
+      <span class="opt-icon" id="icon-${i}"></span>
+    `;
+    optsEl.appendChild(btn);
+  });
+
+  // Buttons
+  document.getElementById('btn-confirm').disabled = true;
+  document.getElementById('btn-confirm').style.display = 'flex';
+  document.getElementById('btn-next').style.display = 'none';
+  document.getElementById('btn-skip').style.display = 'flex';
+  document.getElementById('btn-flag').classList.remove('flagged');
+
+  // AI box
+  document.getElementById('ai-box').classList.remove('show');
+
+  // Progress
+  const pct = ((idx) / questions.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  // Reset timer
+  timerSec = 120;
+  updateTimerDisplay();
+
+  // Animate card
+  const card = document.getElementById('q-card');
+  card.style.animation = 'none';
+  card.offsetHeight;
+  card.style.animation = 'fadeIn .35s ease';
+
+  // Update dots
+  document.querySelectorAll('.q-dot').forEach((d,i) => {
+    d.className = 'q-dot';
+    if (dotStates[i]) d.classList.add(dotStates[i]);
+    if (i===idx) d.classList.add('active');
+  });
+
+  // Update AI tip
+  const tips = {
+    'Türkçe':'Türkçe sorularında önce seçenekleri oku, sonra metne dön. Bu %30 daha hızlı çözüm sağlar.',
+    'Matematik':'İşlem yapmadan önce ne istendiğini tam anla. Tuzak seçenekler sık kullanılır.',
+    'Tarih':'Tarihleri ezberlemek yerine nedensellik zincirini kavra.',
+    'Coğrafya':'Harita sorularında komşu ülkeler ve koordinatlar önemli.',
+    'Fizik':'Birimleri her zaman kontrol et. Boyut analizi hataları önler.',
+    'Kimya':'Denge sorularında Le Chatelier ilkesini hatırla.',
+    'Biyoloji':'Canlılar arası ilişkileri kavramsal düşün, ezber değil.',
+  };
+  document.getElementById('ai-tip').textContent = tips[q.subject] || 'Dikkatli oku, seçenekleri elemeden seç.';
+}
+
+function selectOpt(i) {
+  if (answered) return;
+  selectedOpt = i;
+  document.querySelectorAll('.opt').forEach((el,j) => {
+    el.classList.toggle('selected', j===i);
+  });
+  document.getElementById('btn-confirm').disabled = false;
+}
+
+function confirmAnswer() {
+  if (selectedOpt === null || answered) return;
+  answered = true;
+  const q = questions[qIndex];
+
+  document.querySelectorAll('.opt').forEach((el,i) => {
+    el.style.pointerEvents = 'none';
+    const iconEl = document.getElementById('icon-'+i);
+    if (i === q.correct) {
+      el.classList.add('correct');
+      iconEl.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="var(--success)" stroke-width="1"/><path d="M5 8l2.5 2.5L11 5.5" stroke="var(--success)" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    }
+    if (i === selectedOpt && i !== q.correct) {
+      el.classList.add('wrong');
+      iconEl.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="var(--accent3)" stroke-width="1"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="var(--accent3)" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    }
+  });
+
+  const isCorrect = selectedOpt === q.correct;
+  if (isCorrect) { stats.correct++; dotStates[qIndex] = 'correct'; }
+  else { stats.wrong++; dotStates[qIndex] = 'wrong'; }
+  updateStats();
+  updateDot(qIndex);
+
+  // Show AI explanation (typing effect)
+  showAIExplanation(q.explanation, q.tags);
+
+  // Swap buttons
+  document.getElementById('btn-confirm').style.display = 'none';
+  document.getElementById('btn-skip').style.display = 'none';
+  document.getElementById('btn-next').style.display = 'flex';
+  document.getElementById('btn-next').textContent = qIndex < questions.length-1 ? 'Sonraki Soru →' : 'Sonuçları Gör';
+}
+
+function showAIExplanation(html, tags) {
+  const box = document.getElementById('ai-box');
+  const textEl = document.getElementById('ai-text');
+  const tagsEl = document.getElementById('ai-tags');
+  box.classList.add('show');
+  // Typing effect
+  textEl.innerHTML = '';
+  let i = 0;
+  const stripped = html;
+  const interval = setInterval(() => {
+    textEl.innerHTML = stripped.substring(0, i+=3);
+    if (i >= stripped.length) { textEl.innerHTML = stripped; clearInterval(interval); }
+  }, 18);
+  tagsEl.innerHTML = tags.map(t=>`<span class="ai-tag">${t}</span>`).join('');
+}
+
+function nextQuestion() {
+  if (qIndex >= questions.length - 1) { endSession(); return; }
+  loadQuestion(qIndex + 1);
+}
+
+function skipQuestion() {
+  stats.skipped++;
+  dotStates[qIndex] = 'done';
+  updateStats();
+  updateDot(qIndex);
+  if (qIndex < questions.length - 1) loadQuestion(qIndex + 1);
+  else endSession();
+}
+
+function flagQuestion() {
+  flagged = !flagged;
+  document.getElementById('btn-flag').classList.toggle('flagged', flagged);
+}
+
+function jumpTo(idx) {
+  if (idx === qIndex) return;
+  loadQuestion(idx);
+}
+
+const subjectColors = {Türkçe:'#7c6af7',Matematik:'#c8f53c',Geometri:'#a23cf5',Tarih:'#f53c7a',Coğrafya:'#f5a23c',Fizik:'#3cf5e8',Kimya:'#f53caa',Biyoloji:'#3cf58a',Felsefe:'#f5d33c',"Din Kültürü":'#3c8cf5',Edebiyat:'#f57c3c'};
+
+// ── REAL TYT/AYT KONU LİSTESİ (kaynak: konu_listesi.js — ÖSYM 2026 güncel) ──
+function renderSubjectList(){
+  const dersler = ykskafaTumDersler();
+  const el = document.getElementById('subject-list');
+  el.innerHTML = dersler.map((d,i) => `
+    <div class="subject-item${i===0?' active':''}" onclick="setSubject(this,'${d}')">
+      <div class="subject-dot" style="background:${subjectColors[d]||'#8b89a8'}"></div>${d}<span class="subject-count">${ykskafaKonular(d).length}</span>
+    </div>`).join('');
+  showTopics(dersler[0]);
+}
+
+function setSubject(el, subject) {
+  document.querySelectorAll('.subject-item').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  showTopics(subject);
+  // In real app: filter questions by subject
+}
+
+function showTopics(subject){
+  document.getElementById('topics-title').textContent = `${subject} Konuları (TYT/AYT)`;
+  const topics = ykskafaKonular(subject);
+  document.getElementById('topics-list').innerHTML = topics.map(t=>`<span class="ai-tag">${t}</span>`).join('');
+}
+renderSubjectList();
+
+function updateStats() {
+  document.getElementById('stat-correct').textContent = stats.correct;
+  document.getElementById('stat-wrong').textContent = stats.wrong;
+  document.getElementById('stat-skipped').textContent = stats.skipped;
+  const total = stats.correct + stats.wrong;
+  const acc = total > 0 ? Math.round((stats.correct/total)*100) : 0;
+  const accEl = document.getElementById('stat-accuracy');
+  accEl.textContent = total > 0 ? acc+'%' : '—';
+  accEl.style.color = acc >= 70 ? 'var(--success)' : acc >= 40 ? '#f5a23c' : 'var(--accent3)';
+}
+
+function updateDot(idx) {
+  const d = document.getElementById('dot-'+idx);
+  if (!d) return;
+  d.className = 'q-dot ' + (dotStates[idx]||'');
+  if (idx === qIndex) d.classList.add('active');
+}
+
+// ── TIMER ──
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerSec--;
+    updateTimerDisplay();
+    if (timerSec <= 0) { clearInterval(timerInterval); autoSkip(); }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = String(Math.floor(timerSec/60)).padStart(2,'0');
+  const s = String(timerSec%60).padStart(2,'0');
+  const el = document.getElementById('timer');
+  el.textContent = `${m}:${s}`;
+  el.classList.toggle('warn', timerSec <= 20);
+}
+
+function autoSkip() {
+  if (!answered) skipQuestion();
+}
+
+// ── END SESSION ──
+function endSession() {
+  clearInterval(timerInterval);
+  const total = stats.correct + stats.wrong;
+  const acc = total > 0 ? Math.round((stats.correct/total)*100) : 0;
+
+  document.getElementById('res-correct').textContent = stats.correct;
+  document.getElementById('res-wrong').textContent = stats.wrong;
+  document.getElementById('res-acc').textContent = acc + '%';
+
+  let emoji = '😤', title = 'Devam Et!';
+  if (acc >= 80) { emoji = '🏆'; title = 'Mükemmel!'; }
+  else if (acc >= 60) { emoji = '💪'; title = 'İyi Gidiyorsun!'; }
+  else if (acc >= 40) { emoji = '📚'; title = 'Pratik Yap!'; }
+
+  document.getElementById('res-emoji').textContent = emoji;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent = `${stats.correct} doğru, ${stats.wrong} yanlış, ${stats.skipped} atlama. Başarı oranın %${acc}.`;
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function restartSession() {
+  stats = { correct:0, wrong:0, skipped:0 };
+  dotStates = Array(questions.length).fill('');
+  document.getElementById('result-overlay').classList.remove('show');
+  init();
+}
+
+init();
+</script>
+</body>
+</html>

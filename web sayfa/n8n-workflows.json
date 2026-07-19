@@ -1,0 +1,169 @@
+{
+  "name": "yks-preparation-platform-n8n-workflows",
+  "description": "N8N workflow örnekleri ve entegrasyon dokümantasyonu - YKS Hazırlık Platformu",
+  "version": "1.0.0",
+  "workflows": {
+    "generate_question_gpt4o": {
+      "description": "GPT-4o kullanarak YKS sorusu oluşturma workflow'u",
+      "trigger": "Webhook - POST /generate-question",
+      "nodes": [
+        {
+          "name": "Webhook Trigger",
+          "type": "webhook",
+          "parameters": {
+            "path": "generate-question",
+            "method": "POST",
+            "responseMode": "lastNode"
+          },
+          "notes": "Frontend'den soru üretme isteği alır"
+        },
+        {
+          "name": "Validate Request",
+          "type": "function",
+          "parameters": {
+            "functionCode": "// Gelen parametreleri kontrol et\nconst body = $input.item.json.body;\n\nif (!body.exam_type || !body.subject || !body.topic || !body.difficulty) {\n  throw new Error('Missing required parameters');\n}\n\nreturn { json: body };"
+          },
+          "notes": "İstek parametrelerini doğrular"
+        },
+        {
+          "name": "Build GPT-4o Prompt",
+          "type": "function",
+          "parameters": {
+            "functionCode": "const data = $input.item.json;\n\nconst difficultyLevel = {\n  'Kolay': 'temel seviye, basit hesaplamalar',\n  'Orta': 'orta seviye, birden fazla adım gerektirebilir',\n  'Zor': 'ileri seviye, karmaşık problemler'\n};\n\nconst prompt = `Sen bir ${data.exam_type} sınav sorusu oluşturma uzmanısın.\n\nKonu: ${data.subject} - ${data.topic}\nZorluk: ${data.difficulty} (${difficultyLevel[data.difficulty]})\n\nAşağıdaki formatta bir çoktan seçmeli soru oluştur:\n\n1. Soru metni (açık ve anlaşılır)\n2. 5 seçenek (A, B, C, D, E)\n3. Doğru cevap (harf olarak)\n4. Detaylı çözüm açıklaması\n\nÇıktı formatı JSON olmalı:\n{\n  \"question_text\": \"...\",\n  \"option_a\": \"...\",\n  \"option_b\": \"...\",\n  \"option_c\": \"...\",\n  \"option_d\": \"...\",\n  \"option_e\": \"...\",\n  \"correct_answer\": \"A/B/C/D/E\",\n  \"explanation\": \"...\"\n}\n\nSadece JSON döndür, başka açıklama ekleme.`;\n\nreturn {\n  json: {\n    ...data,\n    prompt: prompt\n  }\n};"
+          },
+          "notes": "GPT-4o için prompt oluşturur"
+        },
+        {
+          "name": "Call GPT-4o API",
+          "type": "httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "https://api.openai.com/v1/chat/completions",
+            "authentication": "headerAuth",
+            "headerAuth": {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.OPENAI_API_KEY}}"
+            },
+            "jsonParameters": true,
+            "options": {
+              "bodyParametersJson": "{\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Sen bir YKS sınav sorusu oluşturma uzmanısın. Daima doğru, eğitici ve standartlara uygun sorular üretirsin.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 1500\n}"
+            }
+          },
+          "notes": "OpenAI GPT-4o API'sini çağırır"
+        },
+        {
+          "name": "Parse GPT Response",
+          "type": "function",
+          "parameters": {
+            "functionCode": "const response = $input.item.json;\nconst content = response.choices[0].message.content;\n\n// JSON'u parse et\nconst questionData = JSON.parse(content);\n\nconst data = $node['Webhook Trigger'].json.body;\n\nreturn {\n  json: {\n    exam_type: data.exam_type,\n    subject: data.subject,\n    topic: data.topic,\n    difficulty: data.difficulty,\n    question_text: questionData.question_text,\n    option_a: questionData.option_a,\n    option_b: questionData.option_b,\n    option_c: questionData.option_c,\n    option_d: questionData.option_d,\n    option_e: questionData.option_e,\n    correct_answer: questionData.correct_answer,\n    explanation: questionData.explanation,\n    generated_by_ai: true,\n    created_date: new Date().toISOString()\n  }\n};"
+          },
+          "notes": "GPT-4o yanıtını parse eder"
+        },
+        {
+          "name": "Save to Database",
+          "type": "httpRequest",
+          "parameters": {
+            "method": "POST",
+            "url": "{{$env.API_BASE_URL}}/tables/questions",
+            "jsonParameters": true,
+            "options": {
+              "bodyParametersJson": "={{$json}}"
+            }
+          },
+          "notes": "Soruyu veritabanına kaydeder"
+        },
+        {
+          "name": "Return Response",
+          "type": "function",
+          "parameters": {
+            "functionCode": "return { json: $input.item.json };"
+          },
+          "notes": "Yanıtı frontend'e döndürür"
+        }
+      ],
+      "connections": [
+        ["Webhook Trigger", "Validate Request"],
+        ["Validate Request", "Build GPT-4o Prompt"],
+        ["Build GPT-4o Prompt", "Call GPT-4o API"],
+        ["Call GPT-4o API", "Parse GPT Response"],
+        ["Parse GPT Response", "Save to Database"],
+        ["Save to Database", "Return Response"]
+      ]
+    },
+    "daily_performance_summary": {
+      "description": "Günlük performans özeti e-posta gönderme",
+      "trigger": "Schedule - Her gün saat 20:00",
+      "nodes": [
+        {
+          "name": "Schedule Trigger",
+          "type": "schedule",
+          "parameters": {
+            "rule": {
+              "interval": [
+                {
+                  "field": "cronExpression",
+                  "expression": "0 20 * * *"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "type": "httpRequest",
+          "parameters": {
+            "method": "GET",
+            "url": "{{$env.API_BASE_URL}}/tables/users?limit=1000"
+          }
+        },
+        {
+          "name": "Process Each User",
+          "type": "splitInBatches",
+          "parameters": {
+            "batchSize": 1
+          }
+        },
+        {
+          "name": "Get User Answers Today",
+          "type": "httpRequest",
+          "parameters": {
+            "method": "GET",
+            "url": "={{$env.API_BASE_URL}}/tables/user_answers?limit=1000"
+          }
+        },
+        {
+          "name": "Filter Today's Answers",
+          "type": "function",
+          "parameters": {
+            "functionCode": "// Bugünün tarihini al\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nconst answers = $input.item.json.data;\nconst userId = $node['Process Each User'].json.id;\n\nconst todayAnswers = answers.filter(a => {\n  const answerDate = new Date(a.answered_date);\n  answerDate.setHours(0, 0, 0, 0);\n  return a.user_id === userId && answerDate >= today;\n});\n\nif (todayAnswers.length === 0) {\n  return null; // Skip this user\n}\n\nconst correct = todayAnswers.filter(a => a.is_correct).length;\nconst wrong = todayAnswers.length - correct;\nconst rate = Math.round((correct / todayAnswers.length) * 100);\n\nreturn {\n  json: {\n    user: $node['Process Each User'].json,\n    total: todayAnswers.length,\n    correct: correct,\n    wrong: wrong,\n    rate: rate\n  }\n};"
+          }
+        },
+        {
+          "name": "Send Email",
+          "type": "emailSend",
+          "parameters": {
+            "fromEmail": "noreply@yksplatform.com",
+            "toEmail": "={{$json.user.email}}",
+            "subject": "Günlük Performans Özeti - YKS Hazırlık",
+            "text": "=Merhaba {{$json.user.full_name}},\n\nBugünkü performansınız:\n\n✅ Çözülen Soru: {{$json.total}}\n✓ Doğru: {{$json.correct}}\n✗ Yanlış: {{$json.wrong}}\n📊 Başarı Oranı: %{{$json.rate}}\n\n{{$json.rate >= 70 ? 'Harika gidiyorsun! 🎉' : 'Devam et, başarıya yakınsın! 💪'}}\n\nYarın da soru çözmeye devam et!\n\nİyi çalışmalar,\nYKS Hazırlık Platformu"
+          }
+        }
+      ]
+    }
+  },
+  "environment_variables": {
+    "OPENAI_API_KEY": "OpenAI API anahtarınız",
+    "API_BASE_URL": "Web platformunuzun API base URL'i",
+    "SMTP_HOST": "E-posta sunucu adresi",
+    "SMTP_PORT": "E-posta sunucu portu",
+    "SMTP_USER": "E-posta kullanıcı adı",
+    "SMTP_PASSWORD": "E-posta şifresi"
+  },
+  "setup_instructions": [
+    "1. N8N'de yeni workflow oluşturun",
+    "2. Yukarıdaki node'ları sırasıyla ekleyin",
+    "3. Environment variables'ı ayarlayın",
+    "4. Webhook URL'ini frontend koduna ekleyin (js/main.js - api.baseUrl)",
+    "5. Test edin ve aktif hale getirin"
+  ]
+}

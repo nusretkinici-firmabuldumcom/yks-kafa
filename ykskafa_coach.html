@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Koç Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--surface:#0e0e1a;--surface2:#13131f;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0ff;--muted:#8b89a8;--accent:#c8f53c;--accent2:#7c6af7;--accent3:#f53c7a;--success:#3cf58a;--warn:#f5a23c;--nav-bg:rgba(8,8,16,.9);--overlay-bg:rgba(8,8,16,.7);--syne:'Syne',sans-serif;--dm:'DM Sans',sans-serif}
+[data-theme="light"]{--bg:#f4f3fa;--surface:#ffffff;--surface2:#f0eefa;--border:rgba(20,16,40,0.08);--border2:rgba(20,16,40,0.14);--text:#161426;--muted:#6b6885;--nav-bg:rgba(255,255,255,.85);--overlay-bg:rgba(20,16,40,.35)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--dm);background:var(--bg);color:var(--text);min-height:100vh;display:flex;transition:background .25s ease,color .25s ease}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,106,247,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(124,106,247,.02) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+
+/* SIDEBAR — same pattern */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;padding:28px 0}
+.sb-logo{font-family:var(--syne);font-size:20px;font-weight:800;letter-spacing:-1px;padding:0 24px 28px;border-bottom:1px solid var(--border);margin-bottom:20px;text-decoration:none;color:var(--text)}
+.sb-logo span{color:var(--accent)}
+.sb-section{font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:0 24px;margin:16px 0 8px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none;border-left:2px solid transparent}
+.sb-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.sb-item.active{color:var(--text);background:rgba(124,106,247,.08);border-left-color:var(--accent2)}
+.sb-badge{margin-left:auto;background:var(--accent3);color:#fff;font-size:10px;font-weight:700;padding:2px 7px}
+.sb-bottom{margin-top:auto;padding:20px 24px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:10px}
+.sb-avatar{width:34px;height:34px;background:linear-gradient(135deg,#f5a23c,var(--accent3));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--syne);font-size:12px;font-weight:800;flex-shrink:0}
+.sb-name{font-size:13px;font-weight:500}
+.sb-plan{font-size:11px;color:var(--warn);margin-top:1px}
+
+/* TOPBAR */
+.topbar{position:fixed;left:220px;right:0;top:0;height:56px;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);z-index:40;display:flex;align-items:center;justify-content:space-between;padding:0 32px}
+.theme-toggle{width:34px;height:34px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent2)}
+.topbar-title{font-family:var(--syne);font-size:16px;font-weight:800;letter-spacing:-.5px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.btn-sm{font-family:var(--dm);font-size:13px;font-weight:500;padding:8px 18px;border:none;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-sm.primary{background:var(--accent);color:#080810}
+.btn-sm.outline{background:transparent;border:1px solid var(--border2);color:var(--muted)}
+.btn-sm.outline:hover{color:var(--text);border-color:var(--border)}
+.btn-sm.primary:hover{opacity:.88}
+
+/* MAIN */
+.main{margin-left:220px;margin-top:56px;position:relative;z-index:1;padding:32px;min-height:calc(100vh - 56px);display:flex;flex-direction:column;gap:24px}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}
+.stat-card{background:var(--surface);padding:22px 26px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+.s1::before{background:var(--accent2)}.s2::before{background:var(--accent)}.s3::before{background:var(--success)}.s4::before{background:var(--warn)}
+.stat-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.stat-val{font-family:var(--syne);font-size:34px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+.stat-change{font-size:12px;color:var(--success)}
+.stat-change.neg{color:var(--accent3)}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid3{display:grid;grid-template-columns:2fr 1fr;gap:24px}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);padding:24px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-title{font-family:var(--syne);font-size:15px;font-weight:800;letter-spacing:-.3px}
+.card-action{font-size:12px;color:var(--accent2);cursor:pointer}
+
+/* STUDENT TABLE */
+.student-table{width:100%;border-collapse:collapse}
+.student-table th{text-align:left;font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:0 0 14px;border-bottom:1px solid var(--border)}
+.student-table td{padding:13px 0;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px}
+.student-table tr:last-child td{border-bottom:none}
+.student-table tr{transition:background .15s;cursor:pointer}
+.student-table tr:hover td{background:rgba(255,255,255,.02)}
+
+.s-name-cell{display:flex;align-items:center;gap:10px}
+.s-avatar{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:var(--syne);font-size:11px;font-weight:800;flex-shrink:0}
+.s-name{font-size:13px;font-weight:400}
+.s-email{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* Mini bar */
+.mini-bar-wrap{width:80px;height:5px;background:var(--border2)}
+.mini-bar{height:100%;transition:width .8s}
+
+/* Status badge */
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500}
+.status-dot::before{content:'';width:6px;height:6px;border-radius:50%}
+.status-dot.active::before{background:var(--success)}
+.status-dot.inactive::before{background:var(--accent3)}
+.status-dot.idle::before{background:var(--warn)}
+
+/* Risk badge */
+.risk{font-size:10px;padding:3px 8px;border:1px solid;letter-spacing:.5px}
+.risk.high{border-color:rgba(245,60,122,.4);color:var(--accent3)}
+.risk.med{border-color:rgba(245,162,60,.4);color:var(--warn)}
+.risk.low{border-color:rgba(60,245,138,.3);color:var(--success)}
+
+/* ACTION DOTS */
+.row-actions{display:flex;gap:6px;opacity:0;transition:opacity .2s}
+.student-table tr:hover .row-actions{opacity:1}
+.act-btn{width:26px;height:26px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s}
+.act-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* LEADERBOARD */
+.lb-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.lb-item:last-child{border-bottom:none}
+.lb-rank{font-family:var(--syne);font-size:13px;font-weight:800;width:24px;text-align:center;color:var(--muted)}
+.lb-rank.gold{color:#ffd700}
+.lb-rank.silver{color:#c0c0c0}
+.lb-rank.bronze{color:#cd7f32}
+.lb-av{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-family:var(--syne);font-size:10px;font-weight:800;flex-shrink:0}
+.lb-name{flex:1;font-size:13px}
+.lb-score{font-family:var(--syne);font-size:13px;font-weight:700;color:var(--accent)}
+.lb-change{font-size:10px;color:var(--success);margin-left:6px}
+
+/* ALERT CARD */
+.alert-item{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.alert-item:last-child{border-bottom:none}
+.alert-icon{width:30px;height:30px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.alert-title{font-size:13px;font-weight:400;margin-bottom:3px}
+.alert-desc{font-size:12px;color:var(--muted);font-weight:300;line-height:1.5}
+.alert-time{font-size:10px;color:var(--muted);margin-top:5px}
+
+/* WEEKLY COMPARISON */
+.comp-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.comp-bar-row:last-child{margin-bottom:0}
+.comp-name{font-size:12px;width:64px;flex-shrink:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-bar-wrap{flex:1;height:8px;background:var(--border2)}
+.comp-bar{height:100%;transition:width 1s ease}
+.comp-val{font-family:var(--syne);font-size:11px;font-weight:700;width:30px;text-align:right;flex-shrink:0}
+
+/* STUDENT DRAWER */
+.drawer-overlay{position:fixed;inset:0;z-index:200;background:var(--overlay-bg);backdrop-filter:blur(8px);display:none}
+.drawer-overlay.show{display:block}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:400px;background:var(--surface);border-left:1px solid var(--border);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.drawer.open{transform:translateX(0)}
+.drawer-header{padding:24px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer-title{font-family:var(--syne);font-size:18px;font-weight:800;letter-spacing:-.5px}
+.drawer-close{background:transparent;border:1px solid var(--border2);color:var(--muted);width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.drawer-close:hover{color:var(--text);border-color:var(--border)}
+.drawer-body{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:20px}
+.drawer-stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border)}
+.dstat{background:var(--surface2);padding:14px;text-align:center}
+.dstat-val{font-family:var(--syne);font-size:22px;font-weight:800;letter-spacing:-1px}
+.dstat-label{font-size:10px;color:var(--muted);margin-top:3px}
+.drawer-subj{display:flex;flex-direction:column;gap:8px}
+.drawer-subj-row{display:flex;align-items:center;gap:10px;font-size:12px}
+.d-subj-name{width:70px;color:var(--muted);flex-shrink:0}
+.d-subj-bar-wrap{flex:1;height:5px;background:var(--border2)}
+.d-subj-bar{height:100%}
+.d-subj-pct{width:30px;text-align:right;font-family:var(--syne);font-size:11px;font-weight:700}
+.drawer-note{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--dm);font-size:13px;font-weight:300;padding:12px 14px;resize:vertical;min-height:80px;outline:none}
+.drawer-note::placeholder{color:var(--muted);opacity:.6}
+.drawer-note:focus{border-color:var(--accent2)}
+
+@media(max-width:860px){
+  .sidebar{display:none}
+  .topbar,.main{margin-left:0}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .drawer{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a href="web%20sayfa/index.html" class="sb-logo">YKS<span>KAFA</span></a>
+  <div class="sb-section">Koç Paneli</div>
+  <a class="sb-item active" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+    Genel Bakış
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M1 14c0-2.8 2.2-5 5-5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M10 10h4M12 8v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Öğrenciler
+    <span class="sb-badge">2</span>
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12V4a1 1 0 011-1h10a1 1 0 011 1v8" stroke="currentColor" stroke-width="1.2"/><path d="M1 12h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Raporlar
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 11V5a1 1 0 00-1-1H4a1 1 0 00-1 1v6" stroke="currentColor" stroke-width="1.2"/><path d="M1 11h14M6 11V8M10 11V6M8 11V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Analizler
+  </a>
+  <div class="sb-section">Araçlar</div>
+  <a class="sb-item" href="ykskafa_solve.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="6.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 2.5l.7-1.5h4.6l.7 1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+    Fotoğrafla Çöz
+  </a>
+  <a class="sb-item" href="ykskafa_ogren.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h5v10H2zM9 3h5v10H9z" stroke="currentColor" stroke-width="1.2"/></svg>
+    Öğren
+  </a>
+  <a class="sb-item" href="ykskafa_kutuphane.html">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12V4a1 1 0 011-1h10a1 1 0 011 1v8" stroke="currentColor" stroke-width="1.2"/><path d="M1 12h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M6 7h4M8 5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Kütüphane
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 3V1M11 3V1M2 7h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Ödev Ver
+  </a>
+  <a class="sb-item" href="#">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Mesajlar
+  </a>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar">MK</div>
+      <div>
+        <div class="sb-name">Murat Koç</div>
+        <div class="sb-plan">Koç Paketi ✦</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title">Koç Paneli</div>
+  <div class="topbar-right">
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Tema değiştir">🌙</button>
+    <button class="btn-sm outline">PDF Rapor</button>
+    <button class="btn-sm primary">+ Öğrenci Ekle</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card s1">
+      <div class="stat-label">Toplam Öğrenci</div>
+      <div class="stat-val" style="color:var(--accent2)">8</div>
+      <div class="stat-change">2 yeni bu ay</div>
+    </div>
+    <div class="stat-card s2">
+      <div class="stat-label">Ortalama Başarı</div>
+      <div class="stat-val" style="color:var(--accent)">%71</div>
+      <div class="stat-change">↑ +5% bu hafta</div>
+    </div>
+    <div class="stat-card s3">
+      <div class="stat-label">Aktif Bugün</div>
+      <div class="stat-val" style="color:var(--success)">6</div>
+      <div class="stat-change">↑ +1 dünden</div>
+    </div>
+    <div class="stat-card s4">
+      <div class="stat-label">Dikkat Gereken</div>
+      <div class="stat-val" style="color:var(--warn)">2</div>
+      <div class="stat-change neg">Risk altında</div>
+    </div>
+  </div>
+
+  <!-- STUDENT TABLE -->
+  <div class="card" style="padding:24px 0">
+    <div class="card-header" style="padding:0 24px">
+      <div class="card-title">Öğrenciler</div>
+      <div style="display:flex;gap:8px">
+        <select style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-family:var(--dm);font-size:12px;padding:5px 10px;outline:none">
+          <option>Tüm öğrenciler</option>
+          <option>Aktif</option>
+          <option>Risk altında</option>
+        </select>
+        <span class="card-action" style="display:flex;align-items:center">Filtrele</span>
+      </div>
+    </div>
+    <div style="padding:0 24px;overflow-x:auto">
+      <table class="student-table" id="student-table">
+        <thead>
+          <tr>
+            <th style="width:220px">Öğrenci</th>
+            <th>Başarı</th>
+            <th>Soru/Hafta</th>
+            <th>Son Aktif</th>
+            <th>Durum</th>
+            <th>Risk</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="student-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BOTTOM GRID -->
+  <div class="grid2">
+    <!-- Leaderboard -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🏆 Bu Hafta Sıralaması</div>
+        <span class="card-action">Tümü →</span>
+      </div>
+      <div id="leaderboard"></div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⚡ AI Uyarıları</div>
+        <span class="card-action">Tümü →</span>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon">🔴</div>
+        <div>
+          <div class="alert-title">Zeynep A. — 3 gündür giriş yapmadı</div>
+          <div class="alert-desc">Sınav 12 gün sonra. AI analizi: kritik geri kalma riski var.</div>
+          <div class="alert-time">2 saat önce tespit edildi</div>
+        </div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon">🟡</div>
+        <div>
+          <div class="alert-title">Can M. — Tarih başarısı düştü</div>
+          <div class="alert-desc">Son 15 soruda %33 başarı. Geçen haftaya göre -22 puan.</div>
+          <div class="alert-time">5 saat önce</div>
+        </div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon">🟢</div>
+        <div>
+          <div class="alert-title">Elif Y. — Matematik rekoru kırdı</div>
+          <div class="alert-desc">Bu hafta 187 soru. Başarı oranı %88'e yükseldi.</div>
+          <div class="alert-time">Dün</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STUDENT DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title" id="drawer-name">Öğrenci Detayı</div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-stat-row">
+      <div class="dstat"><div class="dstat-val" id="d-total" style="color:var(--accent2)">—</div><div class="dstat-label">Toplam Soru</div></div>
+      <div class="dstat"><div class="dstat-val" id="d-acc" style="color:var(--accent)">—</div><div class="dstat-label">Başarı</div></div>
+      <div class="dstat"><div class="dstat-val" id="d-streak" style="color:var(--success)">—</div><div class="dstat-label">Seri</div></div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Konu Bazlı Başarı</div>
+      <div class="drawer-subj" id="drawer-subj"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Koç Notu</div>
+      <textarea class="drawer-note" placeholder="Bu öğrenci için not ekle..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm primary" style="flex:1;text-align:center">Ödev Gönder</button>
+      <button class="btn-sm outline" style="flex:1;text-align:center">Mesaj At</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── THEME ──
+(function(){
+  const saved = localStorage.getItem('ykskafa-theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+function toggleTheme(){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('ykskafa-theme','dark'); document.getElementById('theme-btn').textContent='🌙'; }
+  else { document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('ykskafa-theme','light'); document.getElementById('theme-btn').textContent='☀️'; }
+}
+document.getElementById('theme-btn').textContent = document.documentElement.getAttribute('data-theme')==='light' ? '☀️' : '🌙';
+
+const students = [
+  {name:'Elif Yıldız',email:'elif@mail.com',acc:88,weekly:187,lastActive:'2sa',status:'active',risk:'low',streak:14,total:1243,
+   subj:[{n:'Türkçe',p:91,c:'#7c6af7'},{n:'Matematik',p:88,c:'#c8f53c'},{n:'Tarih',p:72,c:'#f53c7a'},{n:'Fizik',p:85,c:'#3cf5e8'}]},
+  {name:'Ahmet Kaya',email:'ahmet@mail.com',acc:74,weekly:142,lastActive:'5sa',status:'active',risk:'low',streak:7,total:987,
+   subj:[{n:'Türkçe',p:68,c:'#7c6af7'},{n:'Matematik',p:81,c:'#c8f53c'},{n:'Tarih',p:62,c:'#f53c7a'},{n:'Fizik',p:77,c:'#3cf5e8'}]},
+  {name:'Zeynep Arslan',email:'zeynep@mail.com',acc:61,weekly:38,lastActive:'3 gün',status:'inactive',risk:'high',streak:0,total:654,
+   subj:[{n:'Türkçe',p:55,c:'#7c6af7'},{n:'Matematik',p:63,c:'#c8f53c'},{n:'Tarih',p:48,c:'#f53c7a'},{n:'Fizik',p:70,c:'#3cf5e8'}]},
+  {name:'Can Mercan',email:'can@mail.com',acc:67,weekly:95,lastActive:'1 gün',status:'idle',risk:'med',streak:3,total:812,
+   subj:[{n:'Türkçe',p:71,c:'#7c6af7'},{n:'Matematik',p:69,c:'#c8f53c'},{n:'Tarih',p:33,c:'#f53c7a'},{n:'Fizik',p:74,c:'#3cf5e8'}]},
+  {name:'Selin Demir',email:'selin@mail.com',acc:79,weekly:156,lastActive:'3sa',status:'active',risk:'low',streak:9,total:1102,
+   subj:[{n:'Türkçe',p:82,c:'#7c6af7'},{n:'Matematik',p:79,c:'#c8f53c'},{n:'Tarih',p:71,c:'#f53c7a'},{n:'Fizik',p:76,c:'#3cf5e8'}]},
+  {name:'Burak Şahin',email:'burak@mail.com',acc:71,weekly:121,lastActive:'8sa',status:'active',risk:'low',streak:5,total:743,
+   subj:[{n:'Türkçe',p:65,c:'#7c6af7'},{n:'Matematik',p:75,c:'#c8f53c'},{n:'Tarih',p:68,c:'#f53c7a'},{n:'Fizik',p:72,c:'#3cf5e8'}]},
+  {name:'Melis Çelik',email:'melis@mail.com',acc:83,weekly:168,lastActive:'1sa',status:'active',risk:'low',streak:11,total:1089,
+   subj:[{n:'Türkçe',p:87,c:'#7c6af7'},{n:'Matematik',p:84,c:'#c8f53c'},{n:'Tarih',p:76,c:'#f53c7a'},{n:'Fizik',p:80,c:'#3cf5e8'}]},
+  {name:'Onur Polat',email:'onur@mail.com',acc:58,weekly:67,lastActive:'2 gün',status:'idle',risk:'med',streak:1,total:521,
+   subj:[{n:'Türkçe',p:54,c:'#7c6af7'},{n:'Matematik',p:61,c:'#c8f53c'},{n:'Tarih',p:52,c:'#f53c7a'},{n:'Fizik',p:63,c:'#3cf5e8'}]},
+];
+
+const colors = ['#7c6af7','#c8f53c','#f53c7a','#3cf5e8','#f5a23c','#f53caa','#3cf58a','#a23cf5'];
+const riskLabels = {low:'Düşük',med:'Orta',high:'Yüksek'};
+const statusLabels = {active:'Aktif',inactive:'Pasif',idle:'Seyrek'};
+
+// ── RENDER TABLE ──
+const tbody = document.getElementById('student-tbody');
+students.forEach((s,i) => {
+  const barColor = s.acc >= 75 ? 'var(--success)' : s.acc >= 55 ? 'var(--warn)' : 'var(--accent3)';
+  const tr = document.createElement('tr');
+  tr.onclick = () => openDrawer(i);
+  tr.innerHTML = `
+    <td>
+      <div class="s-name-cell">
+        <div class="s-avatar" style="background:linear-gradient(135deg,${colors[i]},${colors[(i+3)%8]})66;border:1px solid ${colors[i]}44;color:${colors[i]}">${s.name.split(' ').map(n=>n[0]).join('')}</div>
+        <div><div class="s-name">${s.name}</div><div class="s-email">${s.email}</div></div>
+      </div>
+    </td>
+    <td>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="mini-bar-wrap"><div class="mini-bar" style="width:${s.acc}%;background:${barColor}"></div></div>
+        <span style="font-family:var(--syne);font-size:12px;font-weight:700;color:${barColor}">%${s.acc}</span>
+      </div>
+    </td>
+    <td style="font-family:var(--syne);font-size:13px;font-weight:700;color:var(--muted)">${s.weekly}</td>
+    <td style="font-size:12px;color:var(--muted)">${s.lastActive}</td>
+    <td><span class="status-dot ${s.status}">${statusLabels[s.status]}</span></td>
+    <td><span class="risk ${s.risk}">${riskLabels[s.risk]}</span></td>
+    <td>
+      <div class="row-actions">
+        <button class="act-btn" title="Mesaj" onclick="event.stopPropagation()">✉</button>
+        <button class="act-btn" title="Rapor" onclick="event.stopPropagation()">↓</button>
+      </div>
+    </td>`;
+  tbody.appendChild(tr);
+});
+
+// ── LEADERBOARD ──
+const sorted = [...students].sort((a,b)=>b.weekly-a.weekly).slice(0,5);
+const rankClass = ['gold','silver','bronze','',''];
+const lb = document.getElementById('leaderboard');
+sorted.forEach((s,i) => {
+  const idx = students.indexOf(s);
+  lb.innerHTML += `
+    <div class="lb-item">
+      <div class="lb-rank ${rankClass[i]}">${i+1}</div>
+      <div class="lb-av" style="background:${colors[idx]}22;border:1px solid ${colors[idx]}44;color:${colors[idx]};font-family:var(--syne);font-size:10px;font-weight:800">${s.name.split(' ').map(n=>n[0]).join('')}</div>
+      <div class="lb-name">${s.name}</div>
+      <div class="lb-score">${s.weekly}</div>
+      <div class="lb-change">↑</div>
+    </div>`;
+});
+
+// ── DRAWER ──
+function openDrawer(i) {
+  const s = students[i];
+  const idx = i;
+  document.getElementById('drawer-name').textContent = s.name;
+  document.getElementById('d-total').textContent = s.total.toLocaleString('tr');
+  document.getElementById('d-acc').textContent = '%' + s.acc;
+  document.getElementById('d-streak').textContent = s.streak + '🔥';
+
+  const subjEl = document.getElementById('drawer-subj');
+  subjEl.innerHTML = '';
+  s.subj.forEach(sub => {
+    subjEl.innerHTML += `
+      <div class="drawer-subj-row">
+        <div class="d-subj-name">${sub.n}</div>
+        <div class="d-subj-bar-wrap"><div class="d-subj-bar" style="width:${sub.p}%;background:${sub.c}"></div></div>
+        <div class="d-subj-pct" style="color:${sub.c}">%${sub.p}</div>
+      </div>`;
+  });
+
+  document.getElementById('drawer-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('drawer').classList.add('open'), 10);
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  setTimeout(() => document.getElementById('drawer-overlay').classList.remove('show'), 300);
+}
+</script>
+</body>
+</html>

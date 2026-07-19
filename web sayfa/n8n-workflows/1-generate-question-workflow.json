@@ -1,0 +1,200 @@
+{
+  "name": "YKS TYT/AYT Soru Üretimi",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "generate-question",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Soru İsteği",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "generate-question-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Gelen parametreleri doğrula\nconst body = $input.item.json.body;\n\n// Required fields\nconst requiredFields = ['exam_type', 'subject', 'topic', 'difficulty', 'user_id'];\nconst missingFields = requiredFields.filter(field => !body[field]);\n\nif (missingFields.length > 0) {\n  throw new Error(`Eksik parametreler: ${missingFields.join(', ')}`);\n}\n\n// Validate exam_type\nif (!['TYT', 'AYT'].includes(body.exam_type)) {\n  throw new Error('exam_type TYT veya AYT olmalıdır');\n}\n\n// Validate difficulty\nif (!['Kolay', 'Orta', 'Zor'].includes(body.difficulty)) {\n  throw new Error('difficulty Kolay, Orta veya Zor olmalıdır');\n}\n\nreturn { json: body };"
+      },
+      "id": "validate-request",
+      "name": "İstek Doğrulama",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const data = $input.item.json;\n\n// Zorluk seviyesi tanımları\nconst difficultyDescriptions = {\n  'Kolay': 'temel seviye bilgi gerektiren, basit hesaplama ve kavramsal sorular',\n  'Orta': 'orta seviye düşünme becerisi gerektiren, birden fazla adım içerebilen sorular',\n  'Zor': 'ileri seviye analitik düşünme gerektiren, karmaşık ve çok adımlı sorular'\n};\n\n// Sınav tipi bilgileri\nconst examInfo = {\n  'TYT': 'Temel Yeterlilik Testi - Temel seviye ve ortak müfredat soruları',\n  'AYT': 'Alan Yeterlilik Testi - Daha detaylı ve alan odaklı sorular'\n};\n\n// GPT-4o Prompt oluştur\nconst prompt = `Sen profesyonel bir ${data.exam_type} sınav sorusu hazırlama uzmanısın.\n\nSINAV BİLGİSİ:\n${examInfo[data.exam_type]}\n\nSORU KRİTERLERİ:\n- Ders: ${data.subject}\n- Konu: ${data.topic}\n- Zorluk Seviyesi: ${data.difficulty} (${difficultyDescriptions[data.difficulty]})\n\nGÖREVİN:\nYKS ${data.exam_type} sınavı standardında, ${data.subject} dersi ${data.topic} konusundan ${data.difficulty} seviyede bir çoktan seçmeli soru oluştur.\n\nKRİTERLER:\n1. Soru metni net, anlaşılır ve Türkçe dilbilgisi kurallarına uygun olmalı\n2. 5 seçenek (A, B, C, D, E) olmalı\n3. Seçenekler birbirine yakın zorlukta ve makul olmalı\n4. Yalnızca bir doğru cevap olmalı\n5. Çözüm açıklaması adım adım ve öğretici olmalı\n6. Matematik soruları için gerekli formüller açıklanmalı\n\nÇIKTI FORMATI (Sadece JSON, başka metin ekleme):\n{\n  \"question_text\": \"Soru metni buraya\",\n  \"option_a\": \"A seçeneği\",\n  \"option_b\": \"B seçeneği\",\n  \"option_c\": \"C seçeneği\",\n  \"option_d\": \"D seçeneği\",\n  \"option_e\": \"E seçeneği\",\n  \"correct_answer\": \"A\" (sadece harf),\n  \"explanation\": \"Detaylı çözüm açıklaması (adım adım)\"\n}`;\n\nreturn {\n  json: {\n    ...data,\n    prompt: prompt\n  }\n};"
+      },
+      "id": "build-prompt",
+      "name": "GPT Prompt Oluştur",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.OPENAI_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Sen YKS sınavları için profesyonel soru hazırlayan bir uzmansın. Daima doğru, eğitici ve MEB standartlarına uygun sorular üretirsin. Cevapların daima geçerli JSON formatında olmalıdır.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"temperature\": 0.8,\n  \"max_tokens\": 2000,\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+        "options": {}
+      },
+      "id": "call-gpt4o",
+      "name": "GPT-4o API Çağrısı",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const response = $input.item.json;\n\n// GPT-4o yanıtını parse et\nlet content = response.choices[0].message.content;\n\n// JSON parse et\nlet questionData;\ntry {\n  // Eğer markdown code block varsa temizle\n  content = content.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  questionData = JSON.parse(content);\n} catch (error) {\n  throw new Error(`JSON parse hatası: ${error.message}\\n\\nContent: ${content}`);\n}\n\n// Webhook'tan gelen orijinal veriyi al\nconst originalData = $node['Webhook - Soru İsteği'].json.body;\n\n// Doğru cevabı normalize et (büyük harf yap)\nconst correctAnswer = questionData.correct_answer.toUpperCase();\n\n// Veritabanı için hazırla\nconst questionRecord = {\n  exam_type: originalData.exam_type,\n  subject: originalData.subject,\n  topic: originalData.topic,\n  difficulty: originalData.difficulty,\n  question_text: questionData.question_text,\n  option_a: questionData.option_a,\n  option_b: questionData.option_b,\n  option_c: questionData.option_c,\n  option_d: questionData.option_d,\n  option_e: questionData.option_e,\n  correct_answer: correctAnswer,\n  explanation: questionData.explanation,\n  generated_by_ai: true,\n  created_by_user_id: originalData.user_id\n};\n\nreturn { json: questionRecord };"
+      },
+      "id": "parse-response",
+      "name": "Yanıtı Parse Et",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_BASE_URL}}/tables/questions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "id": "save-database",
+      "name": "Veritabanına Kaydet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Frontend'e döndürülecek yanıt\nconst savedQuestion = $input.item.json;\n\nreturn {\n  json: {\n    success: true,\n    message: 'Soru başarıyla oluşturuldu',\n    question: savedQuestion,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "return-response",
+      "name": "Yanıtı Döndür",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Hata yakalama\nconst error = $input.item.json.error || $input.item.json;\n\nreturn {\n  json: {\n    success: false,\n    error: error.message || 'Bilinmeyen hata',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "error-handler",
+      "name": "Hata İşleyici",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 500]
+    }
+  ],
+  "connections": {
+    "Webhook - Soru İsteği": {
+      "main": [
+        [
+          {
+            "node": "İstek Doğrulama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "İstek Doğrulama": {
+      "main": [
+        [
+          {
+            "node": "GPT Prompt Oluştur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT Prompt Oluştur": {
+      "main": [
+        [
+          {
+            "node": "GPT-4o API Çağrısı",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o API Çağrısı": {
+      "main": [
+        [
+          {
+            "node": "Yanıtı Parse Et",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yanıtı Parse Et": {
+      "main": [
+        [
+          {
+            "node": "Veritabanına Kaydet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veritabanına Kaydet": {
+      "main": [
+        [
+          {
+            "node": "Yanıtı Döndür",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "instanceId": "yks-platform-n8n"
+  },
+  "tags": ["yks", "tyt", "ayt", "gpt-4o", "question-generation"]
+}

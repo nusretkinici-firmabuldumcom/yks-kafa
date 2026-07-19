@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TYT Soru Çözümü - YKS Hazırlık Platformu">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>TYT Soru Çözümü - YKS Hazırlık Platformu</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/questions.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>YKS Hazırlık</span>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-home"></i> Ana Sayfa
+                    </a>
+                    <a href="tyt.html" class="nav-link active">
+                        <i class="fas fa-book"></i> TYT
+                    </a>
+                    <a href="ayt.html" class="nav-link">
+                        <i class="fas fa-graduation-cap"></i> AYT
+                    </a>
+                    <a href="pricing.html" class="nav-link">
+                        <i class="fas fa-crown"></i> Premium
+                    </a>
+                    <a href="performance.html" class="nav-link">
+                        <i class="fas fa-chart-line"></i> Performans
+                    </a>
+                </nav>
+                <div class="user-info">
+                    <span id="userNameDisplay"><i class="fas fa-user"></i> Kullanıcı</span>
+                    <button onclick="handleLogout()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1><i class="fas fa-book"></i> TYT Soru Çözümü</h1>
+                <p>Temel Yeterlilik Testi - Ders ve Konu Seçerek Soru Çözmeye Başla</p>
+            </div>
+
+            <!-- Subject Selection -->
+            <section id="subjectSelection" class="selection-section">
+                <h2>1. Ders Seç</h2>
+                <div class="selection-grid">
+                    <button class="selection-card" onclick="selectSubject('Türkçe')">
+                        <i class="fas fa-book-reader"></i>
+                        <span>Türkçe</span>
+                    </button>
+                    <button class="selection-card" onclick="selectSubject('Matematik')">
+                        <i class="fas fa-square-root-alt"></i>
+                        <span>Matematik</span>
+                    </button>
+                    <button class="selection-card" onclick="selectSubject('Fizik')">
+                        <i class="fas fa-atom"></i>
+                        <span>Fizik</span>
+                    </button>
+                    <button class="selection-card" onclick="selectSubject('Kimya')">
+                        <i class="fas fa-flask"></i>
+                        <span>Kimya</span>
+                    </button>
+                    <button class="selection-card" onclick="selectSubject('Biyoloji')">
+                        <i class="fas fa-dna"></i>
+                        <span>Biyoloji</span>
+                    </button>
+                    <button class="selection-card" onclick="selectSubject('Tarih')">
+                        <i class="fas fa-landmark"></i>
+                        <span>Tarih</span>
+                    </button>
+                    <button class="selection-card" onclick="selectSubject('Coğrafya')">
+                        <i class="fas fa-globe"></i>
+                        <span>Coğrafya</span>
+                    </button>
+                    <button class="selection-card" onclick="selectSubject('Felsefe')">
+                        <i class="fas fa-brain"></i>
+                        <span>Felsefe</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Topic Selection -->
+            <section id="topicSelection" class="selection-section" style="display: none;">
+                <h2>2. Konu Seç</h2>
+                <div class="back-button-container">
+                    <button onclick="backToSubjectSelection()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Geri
+                    </button>
+                </div>
+                <div id="topicGrid" class="selection-grid"></div>
+            </section>
+
+            <!-- Difficulty Selection -->
+            <section id="difficultySelection" class="selection-section" style="display: none;">
+                <h2>3. Zorluk Seviyesi Seç</h2>
+                <div class="back-button-container">
+                    <button onclick="backToTopicSelection()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Geri
+                    </button>
+                </div>
+                <div class="difficulty-grid">
+                    <button class="difficulty-card easy" onclick="selectDifficulty('Kolay')">
+                        <i class="fas fa-smile"></i>
+                        <h3>Kolay</h3>
+                        <p>Temel düzey sorular</p>
+                    </button>
+                    <button class="difficulty-card medium" onclick="selectDifficulty('Orta')">
+                        <i class="fas fa-meh"></i>
+                        <h3>Orta</h3>
+                        <p>Orta düzey sorular</p>
+                    </button>
+                    <button class="difficulty-card hard" onclick="selectDifficulty('Zor')">
+                        <i class="fas fa-fire"></i>
+                        <h3>Zor</h3>
+                        <p>İleri düzey sorular</p>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Question Display -->
+            <section id="questionSection" class="question-section" style="display: none;">
+                <div class="question-header">
+                    <div class="question-info">
+                        <span class="badge" id="examTypeBadge">TYT</span>
+                        <span class="badge badge-secondary" id="subjectBadge">-</span>
+                        <span class="badge badge-secondary" id="topicBadge">-</span>
+                        <span class="badge badge-secondary" id="difficultyBadge">-</span>
+                    </div>
+                    <div class="question-timer">
+                        <i class="fas fa-clock"></i>
+                        <span id="timer">00:00</span>
+                    </div>
+                </div>
+
+                <div class="question-container">
+                    <div id="loadingSpinner" class="spinner"></div>
+                    
+                    <div id="questionContent" style="display: none;">
+                        <div class="question-number">
+                            <span>Soru <span id="currentQuestionNumber">1</span></span>
+                        </div>
+                        
+                        <div class="question-text" id="questionText"></div>
+                        
+                        <div class="options-container" id="optionsContainer"></div>
+                        
+                        <div class="question-actions">
+                            <button onclick="submitAnswer()" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-check"></i> Cevapla
+                            </button>
+                            <button onclick="generateNewQuestion()" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Yeni Soru Üret
+                            </button>
+                            <button onclick="backToDifficultySelection()" class="btn btn-outline">
+                                <i class="fas fa-times"></i> Çık
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Answer Feedback -->
+                    <div id="answerFeedback" class="answer-feedback" style="display: none;"></div>
+                </div>
+
+                <!-- Statistics Panel -->
+                <div class="stats-panel">
+                    <h3><i class="fas fa-chart-bar"></i> Bu Oturum</h3>
+                    <div class="session-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Çözülen:</span>
+                            <span class="stat-value" id="sessionTotal">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Doğru:</span>
+                            <span class="stat-value stat-success" id="sessionCorrect">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Yanlış:</span>
+                            <span class="stat-value stat-danger" id="sessionWrong">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Başarı:</span>
+                            <span class="stat-value" id="sessionRate">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 YKS Hazırlık Platformu. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script src="js/n8n-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/tyt.js"></script>
+</body>
+</html>

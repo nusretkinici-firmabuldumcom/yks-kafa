@@ -1,0 +1,209 @@
+{
+  "name": "YKS KAFA - Performans Analizi & Raporlama",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "answer-question",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-answer",
+      "name": "Webhook - Cevap Gönder",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "POST /webhook/answer-question\nBody: { kullanici_id, soru_id, verilen_cevap, ders, konu, sure_saniye }"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/sorular?id=eq.{{ $json.body.soru_id }}&select=dogru_cevap,ders,konu,zorluk_puani",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" }
+          ]
+        }
+      },
+      "id": "get-correct-answer",
+      "name": "Doğru Cevabı Getir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const soru = $input.first().json[0];\nconst body = $('Webhook - Cevap Gönder').first().json.body;\n\nconst dogru = soru.dogru_cevap === body.verilen_cevap;\nconst puan = dogru ? soru.zorluk_puani : 0;\n\nreturn [{ json: {\n  kullanici_id: body.kullanici_id,\n  soru_id: body.soru_id,\n  ders: body.ders || soru.ders,\n  konu: body.konu || soru.konu,\n  verilen_cevap: body.verilen_cevap,\n  dogru_cevap: soru.dogru_cevap,\n  dogru_mu: dogru,\n  puan: puan,\n  sure_saniye: body.sure_saniye || 0,\n  zorluk_puani: soru.zorluk_puani,\n  tarih: new Date().toISOString()\n}}];"
+      },
+      "id": "evaluate-answer",
+      "name": "Cevabı Değerlendir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/cevaplar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "save-answer",
+      "name": "Cevabı Kaydet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/cevaplar?kullanici_id=eq.{{ $('Cevabı Değerlendir').item.json.kullanici_id }}&ders=eq.{{ $('Cevabı Değerlendir').item.json.ders }}&select=dogru_mu,puan&limit=100&order=tarih.desc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" }
+          ]
+        }
+      },
+      "id": "get-stats",
+      "name": "İstatistikleri Getir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cevaplar = $input.first().json;\nconst toplam = cevaplar.length;\nconst dogru = cevaplar.filter(c => c.dogru_mu).length;\nconst yanlis = toplam - dogru;\nconst basariOrani = toplam > 0 ? Math.round((dogru / toplam) * 100) : 0;\nconst toplamPuan = cevaplar.reduce((s, c) => s + (c.puan || 0), 0);\n\nconst anlasilan = $('Cevabı Değerlendir').first().json;\n\n// GPT ile zayıf konu analizi (her 10 soruda bir)\nconst analiz_yap = toplam > 0 && toplam % 10 === 0;\n\nreturn [{ json: {\n  kullanici_id: anlasilan.kullanici_id,\n  ders: anlasilan.ders,\n  toplam_soru: toplam,\n  dogru_sayi: dogru,\n  yanlis_sayi: yanlis,\n  basari_orani: basariOrani,\n  toplam_puan: toplamPuan,\n  son_cevap_dogru: anlasilan.dogru_mu,\n  analiz_yap: analiz_yap,\n  guncelleme_tarihi: new Date().toISOString()\n}}];"
+      },
+      "id": "calc-stats",
+      "name": "İstatistik Hesapla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/performans_ozeti?kullanici_id=eq.{{ $json.kullanici_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"{{ $json.ders }}_dogru\": {{ $json.dogru_sayi }},\n  \"{{ $json.ders }}_toplam\": {{ $json.toplam_soru }},\n  \"{{ $json.ders }}_basari\": {{ $json.basari_orani }},\n  \"toplam_puan\": {{ $json.toplam_puan }},\n  \"guncelleme_tarihi\": \"{{ $json.guncelleme_tarihi }}\"\n}"
+      },
+      "id": "update-performance",
+      "name": "Performans Güncelle",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "check-analiz",
+              "leftValue": "={{ $('İstatistik Hesapla').item.json.analiz_yap }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ]
+        }
+      },
+      "id": "check-ai-analysis",
+      "name": "AI Analiz Gerekli mi?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.OPENAI_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Sen bir YKS eğitim koçusun. Öğrencinin performans verilerini analiz ederek kısa, motive edici ve kişiselleştirilmiş öneriler sun. JSON formatında yanıt ver.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Öğrenci performans özeti:\\nDers: {{ $('İstatistik Hesapla').item.json.ders }}\\nToplam Soru: {{ $('İstatistik Hesapla').item.json.toplam_soru }}\\nDoğru: {{ $('İstatistik Hesapla').item.json.dogru_sayi }}\\nYanlış: {{ $('İstatistik Hesapla').item.json.yanlis_sayi }}\\nBaşarı Oranı: %{{ $('İstatistik Hesapla').item.json.basari_orani }}\\n\\nJSON yanıt:\\n{\\n  \\\"genel_yorum\\\": \\\"...\\\",\\n  \\\"guclu_yonler\\\": \\\"...\\\",\\n  \\\"gelistirilecek\\\": \\\"...\\\",\\n  \\\"oneri\\\": \\\"...\\\",\\n  \\\"motivasyon\\\": \\\"...\\\"\\n}\"\n    }\n  ],\n  \"max_tokens\": 400,\n  \"response_format\": { \"type\": \"json_object\" }\n}"
+      },
+      "id": "ai-analysis",
+      "name": "GPT-4o Performans Analizi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"dogru_mu\": {{ $('Cevabı Değerlendir').item.json.dogru_mu }},\n  \"dogru_cevap\": \"{{ $('Cevabı Değerlendir').item.json.dogru_cevap }}\",\n  \"puan\": {{ $('Cevabı Değerlendir').item.json.puan }},\n  \"istatistik\": {\n    \"ders\": \"{{ $('İstatistik Hesapla').item.json.ders }}\",\n    \"basari_orani\": {{ $('İstatistik Hesapla').item.json.basari_orani }},\n    \"toplam_soru\": {{ $('İstatistik Hesapla').item.json.toplam_soru }},\n    \"dogru\": {{ $('İstatistik Hesapla').item.json.dogru_sayi }},\n    \"yanlis\": {{ $('İstatistik Hesapla').item.json.yanlis_sayi }}\n  }\n}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "final-response",
+      "name": "Yanıt Gönder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 380]
+    }
+  ],
+  "connections": {
+    "Webhook - Cevap Gönder": {
+      "main": [[{ "node": "Doğru Cevabı Getir", "type": "main", "index": 0 }]]
+    },
+    "Doğru Cevabı Getir": {
+      "main": [[{ "node": "Cevabı Değerlendir", "type": "main", "index": 0 }]]
+    },
+    "Cevabı Değerlendir": {
+      "main": [[{ "node": "Cevabı Kaydet", "type": "main", "index": 0 }]]
+    },
+    "Cevabı Kaydet": {
+      "main": [[{ "node": "İstatistikleri Getir", "type": "main", "index": 0 }]]
+    },
+    "İstatistikleri Getir": {
+      "main": [[{ "node": "İstatistik Hesapla", "type": "main", "index": 0 }]]
+    },
+    "İstatistik Hesapla": {
+      "main": [[{ "node": "Performans Güncelle", "type": "main", "index": 0 }]]
+    },
+    "Performans Güncelle": {
+      "main": [[{ "node": "AI Analiz Gerekli mi?", "type": "main", "index": 0 }]]
+    },
+    "AI Analiz Gerekli mi?": {
+      "main": [
+        [{ "node": "GPT-4o Performans Analizi", "type": "main", "index": 0 }],
+        [{ "node": "Yanıt Gönder", "type": "main", "index": 0 }]
+      ]
+    },
+    "GPT-4o Performans Analizi": {
+      "main": [[{ "node": "Yanıt Gönder", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA - Öğrenci cevap kaydı, anlık değerlendirme, performans istatistikleri, her 10 soruda GPT-4o analizi.",
+    "envVars": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "OPENAI_API_KEY"]
+  }
+}

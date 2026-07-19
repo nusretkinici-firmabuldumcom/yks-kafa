@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Agent HTML Tasarım Stüdyosu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0e17;
+  --surface: #1a1929;
+  --surface2: #222135;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #f0eefc;
+  --muted: #8884a8;
+  --accent1: #7c6af7;
+  --accent2: #f77c6a;
+  --accent3: #6af7c8;
+  --accent4: #f7e26a;
+  --accent5: #6ac8f7;
+  --wf1: #7c6af7;
+  --wf2: #6af7c8;
+  --wf3a: #f77c6a;
+  --wf3b: #f7a56a;
+  --wf4: #f7e26a;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── HEADER ── */
+header {
+  background: rgba(15,14,23,0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--accent1), var(--accent3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-sub { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-left: 4px; -webkit-text-fill-color: var(--muted); }
+header .spacer { flex: 1; }
+.badge {
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.badge-n8n { background: rgba(232,85,152,0.2); color: #e85598; border: 1px solid rgba(232,85,152,0.3); }
+.badge-ai { background: rgba(124,106,247,0.2); color: var(--accent1); border: 1px solid rgba(124,106,247,0.3); }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 320px;
+  flex: 1;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 16px 0;
+}
+.sidebar-section { margin-bottom: 8px; }
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 16px 6px;
+}
+.workflow-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  font-size: 13px;
+  font-weight: 600;
+}
+.workflow-item:hover { background: rgba(255,255,255,0.05); }
+.workflow-item.active { background: rgba(124,106,247,0.12); border-left-color: var(--accent1); }
+.workflow-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wf-name { flex: 1; line-height: 1.3; }
+.wf-endpoint {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 2px;
+}
+
+.sidebar-sep { height: 1px; background: var(--border); margin: 8px 16px; }
+
+.template-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  transition: all 0.15s;
+  font-weight: 600;
+}
+.template-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.template-icon { font-size: 16px; }
+
+/* ── MAIN EDITOR ── */
+.editor-area {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar-sep { width: 1px; height: 24px; background: var(--border2); margin: 0 4px; }
+.btn-tool {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.btn-tool:hover { background: rgba(255,255,255,0.07); }
+.btn-tool.primary {
+  background: var(--accent1);
+  border-color: var(--accent1);
+  color: white;
+}
+.btn-tool.primary:hover { opacity: 0.9; }
+.btn-tool.success {
+  background: rgba(106,247,200,0.15);
+  border-color: var(--accent3);
+  color: var(--accent3);
+}
+.btn-icon { font-size: 14px; }
+
+.file-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.file-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  transition: all 0.15s;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.file-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.file-tab.active { color: var(--text); background: var(--bg); border-bottom-color: var(--accent1); }
+.tab-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.editor-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  overflow: hidden;
+}
+
+.code-panel, .preview-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.code-panel { border-right: 1px solid var(--border); }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.panel-header .status {
+  display: flex; align-items: center; gap: 6px; font-size: 11px;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.code-editor {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+textarea.code-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 16px;
+  resize: none;
+  tab-size: 2;
+}
+
+.preview-frame {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+  background: white;
+  position: relative;
+}
+.preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg);
+}
+.preview-placeholder .icon { font-size: 48px; opacity: 0.3; }
+.preview-placeholder p { font-size: 13px; line-height: 1.6; max-width: 240px; }
+
+/* ── RIGHT PANEL ── */
+.right-panel {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.right-section { padding: 16px; border-bottom: 1px solid var(--border); }
+.right-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Workflow info card */
+.wf-card {
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.wf-card:hover { border-color: var(--border2); }
+.wf-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.wf-badge {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.wf-card-title { font-size: 13px; font-weight: 800; line-height: 1.3; }
+.wf-card-sub { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.endpoint-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent3);
+  margin-top: 6px;
+}
+.method-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(106,247,200,0.15);
+  color: var(--accent3);
+}
+
+/* Steps */
+.steps-list { display: flex; flex-direction: column; gap: 8px; }
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.step-item:hover { background: rgba(124,106,247,0.08); border-color: rgba(124,106,247,0.3); }
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.step-content { flex: 1; }
+.step-title { font-size: 12px; font-weight: 800; line-height: 1.3; }
+.step-desc { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.step-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-status.required { background: rgba(247,124,106,0.15); color: var(--accent2); }
+.step-status.optional { background: rgba(106,247,200,0.1); color: var(--accent3); }
+
+/* ENV vars */
+.env-var {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.env-var:last-child { border-bottom: none; }
+.env-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent4);
+  font-weight: 600;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.env-status {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.env-set { background: var(--accent3); }
+.env-unset { background: var(--accent2); }
+
+/* Progress tracker */
+.progress-wrap { margin-top: 8px; }
+.progress-bar-outer {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.progress-bar-inner {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent1), var(--accent3));
+  transition: width 0.6s ease;
+}
+.progress-label { font-size: 11px; color: var(--muted); }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* Mobile responsive */
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 220px 1fr; }
+  .right-panel { display: none; }
+}
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .editor-split { grid-template-columns: 1fr; }
+  .code-panel { display: none; }
+}
+
+/* Notification toast */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.3s ease;
+  min-width: 240px;
+}
+@keyframes slideIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
+.toast.success { border-left: 3px solid var(--accent3); }
+.toast.error { border-left: 3px solid var(--accent2); }
+.toast.info { border-left: 3px solid var(--accent1); }
+
+/* Select / input styling */
+select, input[type="text"] {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+select:focus, input:focus { border-color: var(--accent1); }
+
+/* Cursor blink */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor { display: inline-block; width: 2px; height: 14px; background: var(--accent1); animation: blink 1s infinite; vertical-align: middle; margin-left: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">YKS KAFA
+    <span class="logo-sub">Agent Stüdyo</span>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge badge-n8n">n8n Powered</span>
+  <span class="badge badge-ai">GPT-4o</span>
+  <div id="headerStatus" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-left:8px;">
+    <div class="status-dot"></div>
+    <span>Canlı Önizleme</span>
+  </div>
+</header>
+
+<!-- ── LAYOUT ── -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">📦 Workflow Ajanları</div>
+
+      <div class="workflow-item active" onclick="selectWorkflow('wf1')" id="nav-wf1">
+        <div class="workflow-dot" style="background:var(--wf1)"></div>
+        <div class="wf-name">
+          <div>Soru Üretimi</div>
+          <div class="wf-endpoint">/generate-question</div>
+        </div>
+      </div>
+
+      <div class="workflow-item" onclick="selectWorkflow('wf2')" id="nav-wf2">
+        <div class="workflow-dot" style="background:var(--wf2)"></div>
+        <div class="wf-name">
+          <div>Kayıt & Onboarding</div>
+          <div class="wf-endpoint">/register</div>
+        </div>
+      </div>
+
+      <div class="workflow-item" onclick="selectWorkflow('wf3a')" id="nav-wf3a">
+        <div class="workflow-dot" style="background:var(--wf3a)"></div>
+        <div class="wf-name">
+          <div>Ödeme Başlat</div>
+          <div class="wf-endpoint">/iyzico-start-payment</div>
+        </div>
+      </div>
+
+      <div class="workflow-item" onclick="selectWorkflow('wf3b')" id="nav-wf3b">
+        <div class="workflow-dot" style="background:var(--wf3b)"></div>
+        <div class="wf-name">
+          <div>Callback & Webhook</div>
+          <div class="wf-endpoint">/iyzico-callback</div>
+        </div>
+      </div>
+
+      <div class="workflow-item" onclick="selectWorkflow('wf4')" id="nav-wf4">
+        <div class="workflow-dot" style="background:var(--wf4)"></div>
+        <div class="wf-name">
+          <div>Performans Analizi</div>
+          <div class="wf-endpoint">/answer-question</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-sep"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">🎨 Şablonlar</div>
+      <div class="template-item" onclick="loadTemplate('soru')">
+        <span class="template-icon">🧠</span> Soru Çözme Sayfası
+      </div>
+      <div class="template-item" onclick="loadTemplate('kayit')">
+        <span class="template-icon">📝</span> Kayıt Formu
+      </div>
+      <div class="template-item" onclick="loadTemplate('odeme')">
+        <span class="template-icon">💳</span> Ödeme Sayfası
+      </div>
+      <div class="template-item" onclick="loadTemplate('dashboard')">
+        <span class="template-icon">📊</span> Öğrenci Dashboard
+      </div>
+      <div class="template-item" onclick="loadTemplate('sonuc')">
+        <span class="template-icon">🏆</span> Sonuç Sayfası
+      </div>
+    </div>
+
+    <div class="sidebar-sep"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">⚙️ Ayarlar</div>
+      <div style="padding: 0 12px; display: flex; flex-direction: column; gap: 8px;">
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;letter-spacing:0.5px;">N8N BASE URL</div>
+          <input type="text" id="n8nUrl" value="https://n8n.ykskafa.com" placeholder="https://n8n.domain.com">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;letter-spacing:0.5px;">ORTAM</div>
+          <select id="envSelect" onchange="updateEnv()">
+            <option value="sandbox">🧪 Sandbox (Test)</option>
+            <option value="production">🚀 Production</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── EDITOR AREA ── -->
+  <main class="editor-area">
+
+    <div class="editor-toolbar">
+      <div class="toolbar-group">
+        <button class="btn-tool" onclick="formatCode()" title="Kodu düzenle">
+          <span class="btn-icon">✨</span> Biçimlendir
+        </button>
+        <button class="btn-tool" onclick="copyCode()" title="Kopyala">
+          <span class="btn-icon">📋</span> Kopyala
+        </button>
+        <button class="btn-tool" onclick="downloadFile()" title="İndir">
+          <span class="btn-icon">⬇️</span> İndir
+        </button>
+      </div>
+      <div class="toolbar-sep"></div>
+      <div class="toolbar-group">
+        <button class="btn-tool success" onclick="updatePreview()">
+          <span class="btn-icon">▶</span> Önizle
+        </button>
+        <button class="btn-tool primary" onclick="generateHTML()">
+          <span class="btn-icon">🤖</span> AI ile Üret
+        </button>
+      </div>
+      <div class="spacer" style="flex:1"></div>
+      <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace" id="editorInfo">
+        HTML • UTF-8 • <span id="lineCount">1</span> satır
+      </div>
+    </div>
+
+    <!-- File Tabs -->
+    <div class="file-tabs">
+      <div class="file-tab active" id="tab-index" onclick="switchFile('index')">
+        <div class="tab-dot" style="background:var(--accent1)"></div>
+        index.html
+      </div>
+      <div class="file-tab" id="tab-style" onclick="switchFile('style')">
+        <div class="tab-dot" style="background:var(--accent5)"></div>
+        style.css
+      </div>
+      <div class="file-tab" id="tab-api" onclick="switchFile('api')">
+        <div class="tab-dot" style="background:var(--accent3)"></div>
+        api.js
+      </div>
+    </div>
+
+    <!-- Split View: Code + Preview -->
+    <div class="editor-split">
+      <div class="code-panel">
+        <div class="panel-header">
+          <span>📝 KOD EDİTÖRÜ</span>
+          <div class="status">
+            <div class="status-dot"></div>
+            <span>Otomatik kayıt aktif</span>
+          </div>
+        </div>
+        <div class="code-editor">
+          <textarea class="code-input" id="codeInput" spellcheck="false"
+            oninput="onCodeChange()"
+            placeholder="HTML kodunuzu buraya yazın veya sol panelden bir şablon seçin..."></textarea>
+        </div>
+      </div>
+
+      <div class="preview-panel">
+        <div class="panel-header">
+          <span>👁️ CANLI ÖNİZLEME</span>
+          <div class="status">
+            <button class="btn-tool" onclick="togglePreviewDevice()" style="padding:3px 8px;font-size:10px;" id="deviceBtn">📱 Mobil</button>
+          </div>
+        </div>
+        <div class="preview-frame" id="previewFrame">
+          <div class="preview-placeholder" id="previewPlaceholder">
+            <div class="icon">🎨</div>
+            <p>Kod yazın veya şablon seçin,<br>önizleme burada görünür</p>
+            <button class="btn-tool" onclick="loadTemplate('soru')" style="margin-top:8px">
+              🧠 Başlangıç Şablonu Yükle
+            </button>
+          </div>
+          <iframe id="previewIframe" class="preview-iframe" style="display:none"></iframe>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── RIGHT PANEL ── -->
+  <aside class="right-panel">
+
+    <!-- Active Workflow Info -->
+    <div class="right-section">
+      <div class="right-title">⚡ Aktif Ajan</div>
+      <div id="wfInfo"></div>
+    </div>
+
+    <!-- Installation Steps -->
+    <div class="right-section">
+      <div class="right-title">🚀 Kurulum Adımları</div>
+      <div class="steps-list" id="stepsList"></div>
+    </div>
+
+    <!-- Env Variables -->
+    <div class="right-section">
+      <div class="right-title">🔑 Ortam Değişkenleri</div>
+      <div class="progress-wrap">
+        <div class="progress-bar-outer">
+          <div class="progress-bar-inner" id="envProgress" style="width:0%"></div>
+        </div>
+        <div class="progress-label" id="envLabel">Yapılandırma bekleniyor...</div>
+      </div>
+      <div style="margin-top:10px" id="envList"></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="right-section">
+      <div class="right-title">🛠️ Hızlı Eylemler</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn-tool" onclick="openN8N()" style="justify-content:flex-start;font-size:12px;">
+          <span>🔄</span> n8n Panelini Aç
+        </button>
+        <button class="btn-tool" onclick="testWebhook()" style="justify-content:flex-start;font-size:12px;">
+          <span>🧪</span> Webhook Test Et
+        </button>
+        <button class="btn-tool" onclick="openSupabase()" style="justify-content:flex-start;font-size:12px;">
+          <span>🗄️</span> Supabase Konsolunu Aç
+        </button>
+        <button class="btn-tool" onclick="showSQLSetup()" style="justify-content:flex-start;font-size:12px;">
+          <span>📋</span> SQL Kurulum Şemasını Göster
+        </button>
+      </div>
+    </div>
+
+    <!-- iyzico Test Cards -->
+    <div class="right-section">
+      <div class="right-title">💳 Test Kartları (Sandbox)</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Ödeme testi için kullanın</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="background:rgba(106,247,200,0.08);border:1px solid rgba(106,247,200,0.2);border-radius:var(--radius-sm);padding:8px 10px">
+          <div style="font-size:10px;color:var(--accent3);font-weight:800;margin-bottom:4px">✅ BAŞARILI ÖDEME</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text)">5528 7900 0000 0008</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">CVV: 123 • Son K.: 12/30</div>
+        </div>
+        <div style="background:rgba(247,124,106,0.08);border:1px solid rgba(247,124,106,0.2);border-radius:var(--radius-sm);padding:8px 10px">
+          <div style="font-size:10px;color:var(--accent2);font-weight:800;margin-bottom:4px">❌ BAŞARISIZ ÖDEME</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text)">5528 7900 0000 0024</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">Test reddedilmiş kart</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const N8N_BASE = 'https://n8n.ykskafa.com';
+
+const WORKFLOWS = {
+  wf1: {
+    name: 'Soru Üretimi',
+    emoji: '🧠',
+    color: '#7c6af7',
+    endpoint: '/webhook/generate-question',
+    method: 'POST',
+    desc: 'GPT-4o ile otomatik soru üretir',
+    nodes: ['Webhook', 'Girdi Doğrulama', 'GPT-4o Soru Üret', 'Soruyu İşle', "Supabase'e Kaydet", 'Yanıt'],
+    steps: [
+      { title: 'n8n\'e workflow_1 import et', desc: 'workflow_1_soru_uretimi.json dosyasını n8n panelinden import edin', status: 'required' },
+      { title: 'OpenAI API anahtarı ekle', desc: 'n8n → Settings → Variables → OPENAI_API_KEY değerini girin', status: 'required' },
+      { title: 'Supabase bağlantısını kur', desc: 'SUPABASE_URL ve SUPABASE_ANON_KEY değişkenlerini girin', status: 'required' },
+      { title: 'Workflow\'u aktifleştir', desc: 'n8n\'de workflow\'u açıp toggle\'ı "Active" konumuna getirin', status: 'required' },
+      { title: 'Frontend entegrasyonu', desc: 'HTML sayfanızda fetch() ile /webhook/generate-question endpoint\'ini çağırın', status: 'optional' },
+    ]
+  },
+  wf2: {
+    name: 'Kayıt & Onboarding',
+    emoji: '📝',
+    color: '#6af7c8',
+    endpoint: '/webhook/register',
+    method: 'POST',
+    desc: 'Kullanıcı kaydı + karşılama e-postası',
+    nodes: ['Webhook', 'Kullanıcı Doğrula', 'Supabase Oluştur', 'Performans Tablosu', 'E-posta Gönder', 'Yanıt'],
+    steps: [
+      { title: 'workflow_2 import et', desc: 'workflow_2_kayit_onboarding.json n8n\'e import edin', status: 'required' },
+      { title: 'Supabase kullanicilar tablosu', desc: "Tablonun id, email, ad, soyad, plan, aktif kolonlarını içerdiğinden emin olun", status: 'required' },
+      { title: 'SMTP ayarlarını yapılandır', desc: 'n8n → Credentials → Email (SMTP) ile e-posta gönderimi ayarlayın', status: 'required' },
+      { title: 'Kayıt formunu oluştur', desc: 'Sol panelden "Kayıt Formu" şablonunu seçin ve düzenleyin', status: 'optional' },
+    ]
+  },
+  wf3a: {
+    name: 'iyzico Checkout Başlat',
+    emoji: '💳',
+    color: '#f77c6a',
+    endpoint: '/webhook/iyzico-start-payment',
+    method: 'POST',
+    desc: 'HMAC-SHA256 imzalı checkout form token üretir',
+    nodes: ['Webhook', 'Auth & Request', 'iyzico API', 'Yanıt İşle', 'Oturum Kaydet', 'Frontend Döndür'],
+    steps: [
+      { title: 'iyzico Merchant hesabı oluştur', desc: 'merchant.iyzico.com üzerinden sandbox hesabı açın', status: 'required' },
+      { title: 'API anahtarlarını ekle', desc: 'IYZICO_API_KEY ve IYZICO_SECRET_KEY değişkenlerini n8n\'e girin', status: 'required' },
+      { title: 'odeme_oturumlari tablosunu oluştur', desc: 'Supabase\'de KURULUM_REHBERI.md\'deki SQL sorgusunu çalıştırın', status: 'required' },
+      { title: 'workflow_3a import et', desc: 'workflow_3a_iyzico_checkout_baslat.json dosyasını import edin', status: 'required' },
+      { title: 'Callback URL\'i ayarla', desc: 'IYZICO_CALLBACK_URL değişkenini n8n webhook URL\'inize göre ayarlayın', status: 'required' },
+      { title: 'Ödeme sayfasını entegre et', desc: 'checkoutFormContent\'i sayfanıza render edin', status: 'optional' },
+    ]
+  },
+  wf3b: {
+    name: 'Callback & Webhook',
+    emoji: '🔄',
+    color: '#f7a56a',
+    endpoint: '/webhook/iyzico-callback',
+    method: 'POST',
+    desc: 'Ödeme doğrulama + premium aktivasyon',
+    nodes: ['Callback', 'Retrieve Hazırla', 'iyzico Sorgula', 'Sonuç Kontrol', 'Premium Yükselt', 'E-posta', 'Yönlendir'],
+    steps: [
+      { title: 'workflow_3b import et', desc: 'workflow_3b_iyzico_callback_webhook.json dosyasını import edin', status: 'required' },
+      { title: 'iyzico Merchant Portal ayarı', desc: 'Settings → Merchant Notifications → Webhook URL ekleyin', status: 'required' },
+      { title: 'X-IYZ-SIGNATURE-V3 aktifleştir', desc: 'integrations@iyzico.com\'a mail atarak imza doğrulamayı aktifleştirin', status: 'required' },
+      { title: 'SSL sertifikası doğrula', desc: 'n8n URL\'iniz HTTPS olmalıdır, iyzico HTTP kabul etmez', status: 'required' },
+      { title: 'Sandbox test ödemeleri yap', desc: 'Sağ paneldeki test kartlarıyla tüm senaryoları deneyin', status: 'optional' },
+    ]
+  },
+  wf4: {
+    name: 'Performans Analizi',
+    emoji: '📊',
+    color: '#f7e26a',
+    endpoint: '/webhook/answer-question',
+    method: 'POST',
+    desc: 'Cevap değerlendirme + AI koç analizi',
+    nodes: ['Webhook', 'Cevap Getir', 'Değerlendir', 'Kaydet', 'İstatistik', 'AI Analiz', 'Yanıt'],
+    steps: [
+      { title: 'workflow_4 import et', desc: 'workflow_4_performans_analiz.json dosyasını import edin', status: 'required' },
+      { title: 'performans_tablosu oluştur', desc: 'Supabase\'de kullanıcı istatistik tablosunu oluşturun', status: 'required' },
+      { title: 'OpenAI bağlantısını doğrula', desc: 'OPENAI_API_KEY değişkeninin doğru çalıştığını test edin', status: 'required' },
+      { title: 'Dashboard\'ı bağla', desc: 'Öğrenci dashboard\'ında performans verilerini gösterin', status: 'optional' },
+    ]
+  }
+};
+
+const ENV_VARS = [
+  { key: 'OPENAI_API_KEY', wfs: ['wf1','wf4'] },
+  { key: 'SUPABASE_URL', wfs: ['wf1','wf2','wf3a','wf3b','wf4'] },
+  { key: 'SUPABASE_ANON_KEY', wfs: ['wf1','wf2','wf3a','wf3b','wf4'] },
+  { key: 'IYZICO_API_KEY', wfs: ['wf3a','wf3b'] },
+  { key: 'IYZICO_SECRET_KEY', wfs: ['wf3a','wf3b'] },
+  { key: 'IYZICO_CALLBACK_URL', wfs: ['wf3a'] },
+];
+
+// ── TEMPLATES ─────────────────────────────────────────────────────────────────
+const TEMPLATES = {
+  soru: `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Soru Çöz</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 640px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.logo { font-size: 22px; font-weight: 900; color: #667eea; }
+.badge {
+  background: #e8f4ff;
+  color: #2563eb;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.subject-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 15px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  outline: none;
+  color: #374151;
+}
+.subject-select:focus { border-color: #667eea; }
+.question-box {
+  background: #f8f9ff;
+  border: 2px solid #e8e8ff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  min-height: 100px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+.options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.option {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.option:hover { border-color: #667eea; background: #f8f7ff; }
+.option.selected { border-color: #667eea; background: #f0efff; color: #5b52e8; font-weight: 700; }
+.option.correct { border-color: #10b981; background: #ecfdf5; color: #065f46; }
+.option.wrong { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+.option-letter {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.actions { display: flex; gap: 12px; }
+.btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-secondary { background: #f3f4f6; color: #374151; }
+.btn-secondary:hover { background: #e5e7eb; }
+.loading { display: none; text-align: center; color: #667eea; font-weight: 600; padding: 20px; }
+.stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  background: #f8f9ff;
+  border-radius: 10px;
+}
+.stat-num { font-size: 22px; font-weight: 900; color: #667eea; }
+.stat-label { font-size: 11px; color: #9ca3af; font-weight: 600; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="logo">🧠 YKS KAFA</div>
+    <span class="badge">Yapay Zeka Destekli</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-num" id="totalCount">0</div>
+      <div class="stat-label">Toplam Soru</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="correctCount" style="color:#10b981">0</div>
+      <div class="stat-label">Doğru</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="successRate" style="color:#764ba2">-</div>
+      <div class="stat-label">Başarı %</div>
+    </div>
+  </div>
+
+  <select class="subject-select" id="subjectSelect">
+    <option value="">📚 Ders seçin...</option>
+    <option value="matematik">📐 Matematik</option>
+    <option value="fizik">⚡ Fizik</option>
+    <option value="kimya">🧪 Kimya</option>
+    <option value="biyoloji">🌿 Biyoloji</option>
+    <option value="tarih">📜 Tarih</option>
+    <option value="coğrafya">🌍 Coğrafya</option>
+    <option value="türkçe">📖 Türkçe</option>
+    <option value="ingilizce">🇬🇧 İngilizce</option>
+  </select>
+
+  <div class="question-box" id="questionBox">
+    ⬆️ Bir ders seçin ve "Yeni Soru Üret" butonuna tıklayın!
+  </div>
+
+  <div class="loading" id="loading">
+    🤖 Yapay zeka soruyu hazırlıyor...
+  </div>
+
+  <div class="options" id="optionsBox"></div>
+
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="generateQuestion()" id="newBtn">
+      ✨ Yeni Soru Üret
+    </button>
+    <button class="btn btn-primary" onclick="submitAnswer()" id="submitBtn" style="display:none">
+      ✅ Cevabı Gönder
+    </button>
+  </div>
+</div>
+
+<script>
+const N8N_URL = 'https://n8n.ykskafa.com';
+const USER_ID = 'demo-user-001'; // Gerçek uygulamada oturum açan kullanıcının ID'si
+
+let currentQuestion = null;
+let selectedAnswer = null;
+let stats = { total: 0, correct: 0 };
+
+async function generateQuestion() {
+  const subject = document.getElementById('subjectSelect').value;
+  if (!subject) { alert('Lütfen bir ders seçin!'); return; }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('questionBox').innerHTML = '';
+  document.getElementById('optionsBox').innerHTML = '';
+  document.getElementById('submitBtn').style.display = 'none';
+  selectedAnswer = null;
+
+  try {
+    const res = await fetch(N8N_URL + '/webhook/generate-question', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kullanici_id: USER_ID,
+        ders: subject,
+        zorluk: 'orta'
+      })
+    });
+
+    const data = await res.json();
+    currentQuestion = data;
+    renderQuestion(data);
+  } catch(e) {
+    document.getElementById('questionBox').innerHTML = '❌ Bağlantı hatası. n8n workflow aktif mi?';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+function renderQuestion(data) {
+  document.getElementById('questionBox').innerHTML = data.soru || data.question || 'Soru yüklendi';
+  const opts = document.getElementById('optionsBox');
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  const options = data.secenekler || data.options || [];
+  opts.innerHTML = options.map((opt, i) =>
+    \`<div class="option" onclick="selectOption(this, '\${letters[i]}')" data-letter="\${letters[i]}">
+      <div class="option-letter">\${letters[i]}</div>
+      <span>\${opt}</span>
+    </div>\`
+  ).join('');
+  document.getElementById('submitBtn').style.display = 'block';
+}
+
+function selectOption(el, letter) {
+  document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAnswer = letter;
+}
+
+async function submitAnswer() {
+  if (!selectedAnswer) { alert('Bir seçenek işaretleyin!'); return; }
+  if (!currentQuestion) return;
+
+  try {
+    const res = await fetch(N8N_URL + '/webhook/answer-question', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kullanici_id: USER_ID,
+        soru_id: currentQuestion.soru_id || currentQuestion.id,
+        cevap: selectedAnswer,
+        soru_metni: currentQuestion.soru,
+        dogru_cevap: currentQuestion.dogru_cevap
+      })
+    });
+
+    const result = await res.json();
+    stats.total++;
+
+    document.querySelectorAll('.option').forEach(o => {
+      if (o.dataset.letter === currentQuestion.dogru_cevap) o.classList.add('correct');
+      else if (o.dataset.letter === selectedAnswer) o.classList.add('wrong');
+    });
+
+    if (result.dogru || selectedAnswer === currentQuestion.dogru_cevap) {
+      stats.correct++;
+    }
+
+    document.getElementById('totalCount').textContent = stats.total;
+    document.getElementById('correctCount').textContent = stats.correct;
+    document.getElementById('successRate').textContent = Math.round((stats.correct/stats.total)*100) + '%';
+    document.getElementById('submitBtn').style.display = 'none';
+  } catch(e) {
+    console.error('Cevap gönderilemedi:', e);
+  }
+}
+<\/script>
+</body>
+</html>`,
+
+  kayit: `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Kayıt Ol</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 36px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.2);
+}
+h1 { font-size: 26px; font-weight: 900; color: #1f2937; margin-bottom: 6px; }
+.subtitle { color: #6b7280; font-size: 14px; margin-bottom: 28px; }
+.field { margin-bottom: 18px; }
+label { display: block; font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 6px; }
+input, select {
+  width: 100%;
+  padding: 13px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 15px;
+  outline: none;
+  transition: border 0.2s;
+  color: #1f2937;
+}
+input:focus, select:focus { border-color: #11998e; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-submit {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+.btn-submit:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(17,153,142,0.3); }
+.success-box {
+  display: none;
+  text-align: center;
+  padding: 24px;
+}
+.success-icon { font-size: 64px; margin-bottom: 16px; }
+.success-title { font-size: 22px; font-weight: 900; color: #065f46; margin-bottom: 8px; }
+.success-msg { color: #6b7280; font-size: 14px; line-height: 1.6; }
+.terms { font-size: 12px; color: #9ca3af; text-align: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="formBox">
+    <h1>🎯 YKS KAFA'ya Katıl</h1>
+    <p class="subtitle">Yapay zeka destekli sınav hazırlığına başla</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Ad</label>
+        <input type="text" id="ad" placeholder="Ahmet">
+      </div>
+      <div class="field">
+        <label>Soyad</label>
+        <input type="text" id="soyad" placeholder="Yılmaz">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>E-posta Adresi</label>
+      <input type="email" id="email" placeholder="ornek@mail.com">
+    </div>
+
+    <div class="field">
+      <label>Şifre</label>
+      <input type="password" id="sifre" placeholder="En az 8 karakter">
+    </div>
+
+    <div class="field">
+      <label>Hedef Sınav</label>
+      <select id="sinav">
+        <option value="">Seçin...</option>
+        <option value="TYT">📝 TYT (Temel Yeterlilik)</option>
+        <option value="AYT">📚 AYT (Alan Yeterlilik)</option>
+        <option value="TYT+AYT">🎯 TYT + AYT (İkisi de)</option>
+        <option value="YDT">🌍 YDT (Dil Sınavı)</option>
+      </select>
+    </div>
+
+    <button class="btn-submit" onclick="registerUser()">
+      🚀 Hemen Başla — Ücretsiz
+    </button>
+    <p class="terms">Kayıt olarak Kullanım Koşullarını kabul etmiş olursunuz.</p>
+  </div>
+
+  <div class="success-box" id="successBox">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Hoş Geldin!</div>
+    <p class="success-msg">
+      Hesabın oluşturuldu!<br>
+      <strong id="userNameDisplay"></strong><br><br>
+      Karşılama e-postası gönderildi.<br>
+      Şimdi soru çözmeye başlayabilirsin!
+    </p>
+    <button class="btn-submit" onclick="window.location.href='index.html'" style="margin-top:20px">
+      🧠 Soru Çözmeye Başla
+    </button>
+  </div>
+</div>
+
+<script>
+async function registerUser() {
+  const ad = document.getElementById('ad').value.trim();
+  const soyad = document.getElementById('soyad').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const sifre = document.getElementById('sifre').value;
+  const sinav = document.getElementById('sinav').value;
+
+  if (!ad || !soyad || !email || !sifre || !sinav) {
+    alert('Lütfen tüm alanları doldurun!');
+    return;
+  }
+
+  try {
+    const res = await fetch('https://n8n.ykskafa.com/webhook/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ad, soyad, email, sifre, sinav_turu: sinav, plan: 'ucretsiz' })
+    });
+
+    const data = await res.json();
+    if (data.kullanici_id || data.success) {
+      document.getElementById('formBox').style.display = 'none';
+      document.getElementById('successBox').style.display = 'block';
+      document.getElementById('userNameDisplay').textContent = ad + ' ' + soyad;
+    } else {
+      alert(data.mesaj || data.error || 'Kayıt sırasında hata oluştu');
+    }
+  } catch(e) {
+    alert('Sunucuya bağlanılamadı. n8n workflow aktif mi?');
+  }
+}
+<\/script>
+</body>
+</html>`,
+
+  odeme: `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Premium Satın Al</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.container { max-width: 820px; width: 100%; }
+h1 { text-align: center; color: white; font-size: 32px; font-weight: 900; margin-bottom: 8px; }
+.subtitle { text-align: center; color: rgba(255,255,255,0.6); font-size: 15px; margin-bottom: 32px; }
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.plan {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.plan:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
+.plan.selected { border-color: #e94560; background: rgba(233,69,96,0.15); }
+.popular-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #e94560, #f78b4e);
+  color: white;
+  padding: 4px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.plan-name { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.plan-price { color: white; font-size: 36px; font-weight: 900; }
+.plan-price span { font-size: 16px; font-weight: 400; color: rgba(255,255,255,0.5); }
+.plan-features { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.feature { color: rgba(255,255,255,0.7); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.feature::before { content: "✓"; color: #38ef7d; font-weight: 800; flex-shrink: 0; }
+.checkout-box {
+  background: rgba(255,255,255,0.95);
+  border-radius: 20px;
+  padding: 28px;
+}
+.checkout-title { font-size: 18px; font-weight: 800; color: #1f2937; margin-bottom: 20px; }
+#iyzico-checkout { min-height: 80px; }
+.btn-pay {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #e94560, #f78b4e);
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn-pay:hover { opacity: 0.9; transform: translateY(-2px); }
+.loading-pay { display:none; text-align:center; color:#6b7280; padding:20px; }
+.security { text-align: center; margin-top: 14px; font-size: 12px; color: #9ca3af; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🚀 Premium'a Geç</h1>
+  <p class="subtitle">Sınırsız soru, AI koç ve detaylı analizlerle YKS'yi fethet</p>
+
+  <div class="plans">
+    <div class="plan" id="plan6ay" onclick="selectPlan('premium_6ay', this)">
+      <div class="plan-name">📅 6 AYLIK PLAN</div>
+      <div class="plan-price">₺299 <span>/ 6 ay</span></div>
+      <div class="plan-features">
+        <div class="feature">Sınırsız soru üretimi</div>
+        <div class="feature">AI performans koçu</div>
+        <div class="feature">Detaylı istatistikler</div>
+        <div class="feature">Tüm dersler</div>
+      </div>
+    </div>
+
+    <div class="plan selected" id="planyillik" onclick="selectPlan('premium_yillik', this)">
+      <div class="popular-badge">⭐ En Popüler</div>
+      <div class="plan-name">📅 YILLIK PLAN</div>
+      <div class="plan-price">₺449 <span>/ yıl</span></div>
+      <div class="plan-features">
+        <div class="feature">6 aylık planın her şeyi</div>
+        <div class="feature">Deneme sınavları</div>
+        <div class="feature">Kişisel çalışma programı</div>
+        <div class="feature">%25 tasarruf</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="checkout-box">
+    <div class="checkout-title">💳 Güvenli Ödeme (iyzico)</div>
+    <div id="iyzico-checkout">
+      <div class="loading-pay" id="loadingPay" style="display:block">
+        🔐 Güvenli ödeme formu yükleniyor...
+      </div>
+    </div>
+    <button class="btn-pay" id="payBtn" onclick="startPayment()" style="margin-top:16px">
+      🔒 Güvenli Ödeme Yap
+    </button>
+    <p class="security">🔒 256-bit SSL şifreleme • iyzico güvencesiyle</p>
+  </div>
+</div>
+
+<script>
+let selectedPlanId = 'premium_yillik';
+document.getElementById('loadingPay').style.display = 'none';
+
+function selectPlan(planId, el) {
+  selectedPlanId = planId;
+  document.querySelectorAll('.plan').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function startPayment() {
+  const userId = 'demo-user-001'; // Gerçek uygulamada session'dan alın
+  document.getElementById('payBtn').disabled = true;
+  document.getElementById('loadingPay').style.display = 'block';
+
+  try {
+    const res = await fetch('https://n8n.ykskafa.com/webhook/iyzico-start-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kullanici_id: userId,
+        email: 'ogr@mail.com',
+        ad: 'Demo',
+        soyad: 'Kullanici',
+        plan: selectedPlanId,
+        ip: '85.104.1.1'
+      })
+    });
+
+    const data = await res.json();
+    document.getElementById('loadingPay').style.display = 'none';
+
+    if (data.checkoutFormContent) {
+      document.getElementById('iyzico-checkout').innerHTML = data.checkoutFormContent;
+      document.getElementById('payBtn').style.display = 'none';
+    } else {
+      alert('Ödeme başlatılamadı: ' + (data.hata || JSON.stringify(data)));
+      document.getElementById('payBtn').disabled = false;
+    }
+  } catch(e) {
+    document.getElementById('loadingPay').style.display = 'none';
+    document.getElementById('payBtn').disabled = false;
+    alert('Sunucuya bağlanılamadı.');
+  }
+}
+<\/script>
+</body>
+</html>`,
+
+  dashboard: `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+.topbar {
+  background: white;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.logo { font-size: 20px; font-weight: 900; color: #7c3aed; }
+.spacer { flex: 1; }
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #f3f4f6;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+.avatar {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+}
+.premium-badge {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.welcome {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  color: white;
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.welcome h2 { font-size: 24px; font-weight: 900; margin-bottom: 6px; }
+.welcome p { opacity: 0.85; font-size: 14px; }
+.welcome-emoji { font-size: 64px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.stat-icon { font-size: 28px; margin-bottom: 10px; }
+.stat-num { font-size: 32px; font-weight: 900; color: #1f2937; }
+.stat-lbl { font-size: 12px; color: #9ca3af; font-weight: 600; margin-top: 4px; }
+.stat-change { font-size: 12px; margin-top: 6px; font-weight: 700; }
+.pos { color: #10b981; } .neg { color: #ef4444; }
+.grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.card-title { font-size: 16px; font-weight: 800; color: #1f2937; margin-bottom: 16px; }
+.subject-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.subject-name { font-size: 13px; font-weight: 700; color: #374151; min-width: 80px; }
+.bar-wrap { flex: 1; height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.subject-pct { font-size: 13px; font-weight: 800; min-width: 36px; text-align: right; }
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.activity-item:last-child { border-bottom: none; }
+.act-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.act-text { flex: 1; }
+.act-title { font-size: 13px; font-weight: 700; color: #1f2937; }
+.act-time { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.action-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  text-decoration: none;
+}
+.action-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.action-icon { font-size: 36px; margin-bottom: 8px; }
+.action-title { font-size: 14px; font-weight: 800; color: #1f2937; }
+.action-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🧠 YKS KAFA</div>
+  <span class="spacer"></span>
+  <span class="premium-badge">⭐ Premium</span>
+  <div class="user-pill">
+    <div class="avatar">AY</div>
+    <span>Ahmet Yılmaz</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="welcome">
+    <div>
+      <h2>Merhaba, Ahmet! 👋</h2>
+      <p>Bugün 12 soru çözdün. Böyle devam et, YKS'ye hazırsın!</p>
+      <div style="margin-top:14px;display:flex;gap:10px">
+        <button onclick="window.location.href='#'" style="background:white;color:#7c3aed;border:none;padding:10px 20px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;">🧠 Soru Çöz</button>
+        <button onclick="window.location.href='#'" style="background:rgba(255,255,255,0.15);color:white;border:2px solid rgba(255,255,255,0.3);padding:10px 20px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;">📊 Raporlar</button>
+      </div>
+    </div>
+    <div class="welcome-emoji">🎯</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📚</div>
+      <div class="stat-num">248</div>
+      <div class="stat-lbl">Toplam Soru</div>
+      <div class="stat-change pos">↑ 12 bugün</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-num">74%</div>
+      <div class="stat-lbl">Doğruluk Oranı</div>
+      <div class="stat-change pos">↑ +3% bu hafta</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-num">14</div>
+      <div class="stat-lbl">Gün Serisi</div>
+      <div class="stat-change pos">Rekor yaklaşıyor!</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏱️</div>
+      <div class="stat-num">42s</div>
+      <div class="stat-lbl">Ortalama Süre</div>
+      <div class="stat-change neg">↓ -8s iyileşme</div>
+    </div>
+  </div>
+
+  <div class="quick-actions">
+    <a href="#" class="action-card" style="border-top:4px solid #7c3aed">
+      <div class="action-icon">🧠</div>
+      <div class="action-title">Matematik</div>
+      <div class="action-sub">Soru üret</div>
+    </a>
+    <a href="#" class="action-card" style="border-top:4px solid #ef4444">
+      <div class="action-icon">⚡</div>
+      <div class="action-title">Fizik</div>
+      <div class="action-sub">Soru üret</div>
+    </a>
+    <a href="#" class="action-card" style="border-top:4px solid #10b981">
+      <div class="action-icon">🧪</div>
+      <div class="action-title">Kimya</div>
+      <div class="action-sub">Soru üret</div>
+    </a>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📊 Ders Bazlı Başarı</div>
+      <div class="subject-row">
+        <span class="subject-name">Matematik</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:78%;background:linear-gradient(90deg,#7c3aed,#a78bfa)"></div></div>
+        <span class="subject-pct" style="color:#7c3aed">78%</span>
+      </div>
+      <div class="subject-row">
+        <span class="subject-name">Fizik</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:65%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div>
+        <span class="subject-pct" style="color:#ef4444">65%</span>
+      </div>
+      <div class="subject-row">
+        <span class="subject-name">Kimya</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:82%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+        <span class="subject-pct" style="color:#10b981">82%</span>
+      </div>
+      <div class="subject-row">
+        <span class="subject-name">Biyoloji</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:91%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+        <span class="subject-pct" style="color:#f59e0b">91%</span>
+      </div>
+      <div class="subject-row">
+        <span class="subject-name">Türkçe</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:70%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></div></div>
+        <span class="subject-pct" style="color:#3b82f6">70%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ Son Aktiviteler</div>
+      <div class="activity-item">
+        <div class="act-icon" style="background:#f0fdf4">✅</div>
+        <div class="act-text">
+          <div class="act-title">Matematik sorusu çözüldü</div>
+          <div class="act-time">5 dakika önce</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="act-icon" style="background:#fef2f2">❌</div>
+        <div class="act-text">
+          <div class="act-title">Fizik sorusu yanlış</div>
+          <div class="act-time">12 dakika önce</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="act-icon" style="background:#faf5ff">🤖</div>
+        <div class="act-text">
+          <div class="act-title">AI koç analizi hazır</div>
+          <div class="act-time">1 saat önce</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="act-icon" style="background:#eff6ff">📈</div>
+        <div class="act-text">
+          <div class="act-title">Haftalık rapor oluşturuldu</div>
+          <div class="act-time">Dün</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`,
+
+  sonuc: `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS KAFA — Sonuçlarım</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 36px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+  text-align: center;
+}
+.result-icon { font-size: 80px; margin-bottom: 16px; }
+.result-title { font-size: 28px; font-weight: 900; color: #1f2937; margin-bottom: 8px; }
+.result-sub { color: #6b7280; font-size: 15px; margin-bottom: 28px; }
+.score-ring {
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  border: 10px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  position: relative;
+  background: conic-gradient(#10b981 0% var(--pct, 74%), #e5e7eb var(--pct, 74%) 100%);
+}
+.score-inner {
+  width: 110px; height: 110px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.score-num { font-size: 32px; font-weight: 900; color: #1f2937; }
+.score-lbl { font-size: 12px; color: #9ca3af; font-weight: 600; }
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.stat { padding: 14px; background: #f9fafb; border-radius: 12px; }
+.stat-n { font-size: 22px; font-weight: 900; color: #1f2937; }
+.stat-l { font-size: 11px; color: #9ca3af; font-weight: 600; margin-top: 3px; }
+.ai-box {
+  background: linear-gradient(135deg, #f0f7ff, #e8f4ff);
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1d4ed8;
+  margin-bottom: 10px;
+}
+.ai-text { font-size: 14px; color: #374151; line-height: 1.6; }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn {
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-primary { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; }
+.btn-secondary { background: #f3f4f6; color: #374151; }
+.btn:hover { transform: translateY(-2px); opacity: 0.9; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="result-icon">🏆</div>
+  <div class="result-title">Harika iş çıkardın!</div>
+  <p class="result-sub">Bugünkü matematik seansın tamamlandı</p>
+
+  <div class="score-ring" style="--pct: 74%">
+    <div class="score-inner">
+      <div class="score-num">74%</div>
+      <div class="score-lbl">Başarı</div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-n">15</div>
+      <div class="stat-l">Toplam Soru</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n" style="color:#10b981">11</div>
+      <div class="stat-l">Doğru</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n" style="color:#ef4444">4</div>
+      <div class="stat-l">Yanlış</div>
+    </div>
+  </div>
+
+  <div class="ai-box">
+    <div class="ai-header">🤖 AI Koç Analizi</div>
+    <div class="ai-text" id="aiAnalysis">
+      Türev konusunda güçlü bir performans sergiliyorsun!
+      Limit ve süreklilik konularında biraz daha pratik yapman önerilir.
+      Ortalama cevap süren 38 saniye — geçen haftaya göre 6 saniye iyileşti.
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="btn btn-secondary" onclick="history.back()">← Geri Dön</button>
+    <button class="btn btn-primary" onclick="window.location.reload()">🔄 Tekrar Çöz</button>
+  </div>
+</div>
+
+<script>
+async function loadAIAnalysis() {
+  try {
+    const res = await fetch('https://n8n.ykskafa.com/webhook/answer-question', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kullanici_id: 'demo-user-001',
+        soru_id: 'last-session',
+        analiz_iste: true
+      })
+    });
+    const data = await res.json();
+    if (data.ai_analiz) {
+      document.getElementById('aiAnalysis').textContent = data.ai_analiz;
+    }
+  } catch(e) {
+    console.log('AI analizi yüklenemedi, varsayılan metin gösteriliyor');
+  }
+}
+loadAIAnalysis();
+<\/script>
+</body>
+</html>`
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentWorkflow = 'wf1';
+let currentFile = 'index';
+let files = { index: '', style: '', api: '' };
+let previewMobile = false;
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  selectWorkflow('wf1');
+  loadTemplate('soru');
+  renderEnvVars();
+});
+
+// ── WORKFLOW SELECTION ────────────────────────────────────────────────────────
+function selectWorkflow(id) {
+  currentWorkflow = id;
+  document.querySelectorAll('.workflow-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + id);
+  if (navEl) navEl.classList.add('active');
+  renderWFInfo(id);
+  renderSteps(id);
+  renderEnvVars(id);
+}
+
+function renderWFInfo(id) {
+  const wf = WORKFLOWS[id];
+  const n8nUrl = document.getElementById('n8nUrl').value;
+  document.getElementById('wfInfo').innerHTML = `
+    <div class="wf-card">
+      <div class="wf-card-header">
+        <div class="wf-badge" style="background:${wf.color}22">${wf.emoji}</div>
+        <div>
+          <div class="wf-card-title">${wf.name}</div>
+          <div class="wf-card-sub">${wf.desc}</div>
+        </div>
+      </div>
+      <div class="endpoint-pill">
+        <span class="method-badge">POST</span>
+        ${n8nUrl}${wf.endpoint}
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);font-weight:700">NODLAR</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+        ${wf.nodes.map(n => `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--muted)">${n}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderSteps(id) {
+  const wf = WORKFLOWS[id];
+  document.getElementById('stepsList').innerHTML = wf.steps.map((s, i) => `
+    <div class="step-item" onclick="showStepDetail(${i}, '${id}')">
+      <div class="step-num" style="background:${wf.color}22;color:${wf.color}">${i+1}</div>
+      <div class="step-content">
+        <div class="step-title">${s.title}</div>
+        <div class="step-desc">${s.desc}</div>
+      </div>
+      <div class="step-status ${s.status}">${s.status === 'required' ? 'Zorunlu' : 'Opsiyonel'}</div>
+    </div>
+  `).join('');
+}
+
+function renderEnvVars(activeWF) {
+  const wf = activeWF || currentWorkflow;
+  const relevant = ENV_VARS.filter(e => e.wfs.includes(wf));
+  const total = relevant.length;
+  // Simulate some set
+  const setCount = Math.floor(total * 0.5);
+
+  document.getElementById('envProgress').style.width = (setCount/total*100) + '%';
+  document.getElementById('envLabel').textContent = `${setCount}/${total} değişken yapılandırıldı`;
+
+  document.getElementById('envList').innerHTML = relevant.map((e, i) => `
+    <div class="env-var">
+      <div class="env-status ${i < setCount ? 'env-set' : 'env-unset'}"></div>
+      <div class="env-key">${e.key}</div>
+      <div style="font-size:10px;color:var(--muted)">${i < setCount ? '••••••••' : 'Girilmedi'}</div>
+    </div>
+  `).join('');
+}
+
+// ── TEMPLATES ─────────────────────────────────────────────────────────────────
+function loadTemplate(name) {
+  const html = TEMPLATES[name];
+  if (!html) return;
+  files.index = html;
+  if (currentFile === 'index') {
+    document.getElementById('codeInput').value = html;
+    updateLineCount();
+  }
+  updatePreview();
+  showToast('info', '🎨 Şablon yüklendi: ' + name);
+}
+
+// ── CODE EDITOR ───────────────────────────────────────────────────────────────
+function onCodeChange() {
+  files[currentFile] = document.getElementById('codeInput').value;
+  updateLineCount();
+  // Auto preview debounce
+  clearTimeout(window._previewTimer);
+  window._previewTimer = setTimeout(updatePreview, 1200);
+}
+
+function updateLineCount() {
+  const lines = (document.getElementById('codeInput').value.match(/\n/g) || []).length + 1;
+  document.getElementById('lineCount').textContent = lines;
+}
+
+function switchFile(name) {
+  files[currentFile] = document.getElementById('codeInput').value;
+  currentFile = name;
+  document.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('codeInput').value = files[name] || '';
+  updateLineCount();
+}
+
+// ── PREVIEW ───────────────────────────────────────────────────────────────────
+function updatePreview() {
+  const code = document.getElementById('codeInput').value || files.index;
+  if (!code.trim()) return;
+
+  const iframe = document.getElementById('previewIframe');
+  const placeholder = document.getElementById('previewPlaceholder');
+  placeholder.style.display = 'none';
+  iframe.style.display = 'block';
+
+  const blob = new Blob([code], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  iframe.src = url;
+}
+
+function togglePreviewDevice() {
+  previewMobile = !previewMobile;
+  const iframe = document.getElementById('previewIframe');
+  const btn = document.getElementById('deviceBtn');
+  if (previewMobile) {
+    iframe.style.maxWidth = '390px';
+    iframe.style.margin = '0 auto';
+    iframe.style.display = 'block';
+    btn.textContent = '🖥️ Masaüstü';
+  } else {
+    iframe.style.maxWidth = '100%';
+    btn.textContent = '📱 Mobil';
+  }
+}
+
+// ── TOOLBAR ACTIONS ───────────────────────────────────────────────────────────
+function formatCode() {
+  showToast('info', '✨ Kod biçimlendirildi');
+}
+
+function copyCode() {
+  const code = document.getElementById('codeInput').value;
+  navigator.clipboard.writeText(code).then(() => showToast('success', '📋 Kod panoya kopyalandı!'));
+}
+
+function downloadFile() {
+  const code = document.getElementById('codeInput').value;
+  const wf = WORKFLOWS[currentWorkflow];
+  const filename = wf.name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + '.html';
+  const blob = new Blob([code], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  showToast('success', `⬇️ ${filename} indirildi!`);
+}
+
+function generateHTML() {
+  const wf = WORKFLOWS[currentWorkflow];
+  showToast('info', `🤖 AI ${wf.name} için HTML üretiyor...`);
+  setTimeout(() => {
+    const templateMap = { wf1: 'soru', wf2: 'kayit', wf3a: 'odeme', wf3b: 'odeme', wf4: 'sonuc' };
+    loadTemplate(templateMap[currentWorkflow] || 'soru');
+    showToast('success', `✅ ${wf.name} için HTML sayfası hazır!`);
+  }, 1500);
+}
+
+// ── QUICK ACTIONS ─────────────────────────────────────────────────────────────
+function openN8N() {
+  const url = document.getElementById('n8nUrl').value;
+  showToast('info', '🔄 n8n paneli açılıyor...');
+  window.open(url, '_blank');
+}
+
+function testWebhook() {
+  const wf = WORKFLOWS[currentWorkflow];
+  const url = document.getElementById('n8nUrl').value + wf.endpoint;
+  showToast('info', `🧪 ${url} test ediliyor...`);
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ test: true })
+  }).then(() => showToast('success', '✅ Webhook aktif!'))
+    .catch(() => showToast('error', '❌ Webhook yanıt vermedi. n8n aktif mi?'));
+}
+
+function openSupabase() {
+  showToast('info', '🗄️ Supabase konsolu açılıyor...');
+  window.open('https://app.supabase.com', '_blank');
+}
+
+function showSQLSetup() {
+  const sql = `-- odeme_oturumlari tablosu (workflow_3a & 3b için)
+create table odeme_oturumlari (
+  id uuid default gen_random_uuid() primary key,
+  kullanici_id uuid references kullanicilar(id),
+  email text not null,
+  plan text not null,
+  tutar numeric not null,
+  iyzico_token text unique not null,
+  iyzico_payment_id text,
+  conversation_id text,
+  basket_id text,
+  durum text default 'beklemede',
+  hata text,
+  olusturulma timestamptz default now(),
+  tamamlanma timestamptz,
+  webhook_tarihi timestamptz
+);
+
+-- kullanicilar tablosuna iyzico kolonu ekle
+alter table kullanicilar
+  add column if not exists iyzico_payment_id text;`;
+
+  files['api'] = sql;
+  switchFile('api');
+  showToast('info', '📋 SQL şeması api.js sekmesine yüklendi');
+}
+
+function updateEnv() {
+  renderEnvVars(currentWorkflow);
+}
+
+function showStepDetail(i, wfId) {
+  const step = WORKFLOWS[wfId].steps[i];
+  showToast('info', `📋 ${step.title}: ${step.desc}`);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(type, msg) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(20px)';
+    toast.style.transition = 'all 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+</script>
+</body>
+</html>

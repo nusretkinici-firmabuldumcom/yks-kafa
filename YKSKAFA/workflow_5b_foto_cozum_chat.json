@@ -1,0 +1,113 @@
+{
+  "name": "YKS KAFA - Foto Çözüm AI Chat Takip Sorusu",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "foto-coz-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Takip Sorusu",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "ykskafa-foto-coz-chat",
+      "notes": "POST /webhook/foto-coz-chat\nBody: { soru, baglam: { ders, konu, steps, answer } }"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "id": "check-soru",
+              "leftValue": "={{ $json.body.soru }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "validate-input",
+      "name": "Girdi Doğrulama",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.OPENAI_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "model", "value": "gpt-4o-mini" },
+            {
+              "name": "messages",
+              "value": "=[\n  {\n    \"role\": \"system\",\n    \"content\": \"Sen 7/24 açık bir YKS AI öğretmenisin. Öğrenci sana az önce çözülen bir sorunun bir adımını ya da mantığını soruyor. Kısa (2-4 cümle), sade, cesaretlendirici bir Türkçe ile açıkla. Gerekirse basit bir örnekle pekiştir.\"\n  },\n  {\n    \"role\": \"user\",\n    \"content\": \"Çözülen soru: {{ $json.body.baglam?.ders }} — {{ $json.body.baglam?.konu }}\\nÇözüm adımları: {{ JSON.stringify($json.body.baglam?.steps || []) }}\\nCevap: {{ $json.body.baglam?.answer }}\\n\\nÖğrencinin sorusu: {{ $json.body.soru }}\"\n  }\n]"
+            },
+            { "name": "max_tokens", "value": "300" },
+            { "name": "temperature", "value": "0.6" }
+          ]
+        }
+      },
+      "id": "openai-chat",
+      "name": "GPT-4o-mini Yanıt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"cevap\": {{ JSON.stringify($json.choices[0].message.content) }} }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "success-response",
+      "name": "Başarılı Yanıt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": false, \"error\": \"Soru metni gerekli\" }",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Hata Yanıtı",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 420]
+    }
+  ],
+  "connections": {
+    "Webhook - Takip Sorusu": {
+      "main": [[{ "node": "Girdi Doğrulama", "type": "main", "index": 0 }]]
+    },
+    "Girdi Doğrulama": {
+      "main": [
+        [{ "node": "GPT-4o-mini Yanıt", "type": "main", "index": 0 }],
+        [{ "node": "Hata Yanıtı", "type": "main", "index": 0 }]
+      ]
+    },
+    "GPT-4o-mini Yanıt": {
+      "main": [[{ "node": "Başarılı Yanıt", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA - Fotoğrafla çözülen sorunun altındaki AI sohbet kutusu için takip sorusu yanıtlayıcı. Ucuz/hızlı olsun diye gpt-4o-mini kullanır.",
+    "envVars": ["OPENAI_API_KEY"]
+  }
+}

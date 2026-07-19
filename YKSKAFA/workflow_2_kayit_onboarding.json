@@ -1,0 +1,135 @@
+{
+  "name": "YKS KAFA - Kullanıcı Kayıt & Onboarding",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "register",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-register",
+      "name": "Webhook - Kayıt",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "POST /webhook/register\nBody: { email, ad, soyad, hedef_bolum, sinif }"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst { email, ad, soyad, hedef_bolum, sinif } = body;\n\nif (!email || !ad || !soyad) {\n  throw new Error('EMAIL_AD_SOYAD_ZORUNLU');\n}\n\nconst emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nif (!emailRegex.test(email)) {\n  throw new Error('GECERSIZ_EMAIL');\n}\n\nreturn [{ json: {\n  email: email.toLowerCase().trim(),\n  ad: ad.trim(),\n  soyad: soyad.trim(),\n  hedef_bolum: hedef_bolum || 'Belirtilmedi',\n  sinif: sinif || '12',\n  kayit_tarihi: new Date().toISOString(),\n  plan: 'deneme',\n  deneme_bitis: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),\n  kalan_soru_hakki: 680,\n  aktif: true\n}}];"
+      },
+      "id": "validate-user",
+      "name": "Kullanıcı Doğrula",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/kullanicilar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "create-user-supabase",
+      "name": "Supabase - Kullanıcı Oluştur",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/performans_ozeti",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"kullanici_id\": \"{{ $json[0].id }}\",\n  \"tyt_matematik\": 0,\n  \"tyt_turkce\": 0,\n  \"tyt_fen\": 0,\n  \"tyt_sosyal\": 0,\n  \"ayt_matematik\": 0,\n  \"toplam_cozulen\": 0,\n  \"dogru_orani\": 0,\n  \"guncelleme_tarihi\": \"{{ new Date().toISOString() }}\"\n}"
+      },
+      "id": "init-performance",
+      "name": "Performans Tablosu Oluştur",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ykskafa.com",
+        "toEmail": "={{ $('Kullanıcı Doğrula').item.json.email }}",
+        "subject": "YKS KAFA'ya Hoş Geldin! 🎓",
+        "emailType": "html",
+        "message": "=<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;\">\n  <div style=\"background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 40px; text-align: center;\">\n    <h1 style=\"color: white; margin: 0;\">YKS KAFA'ya Hoş Geldin! 🎓</h1>\n  </div>\n  <div style=\"padding: 30px; background: white; margin: 20px; border-radius: 12px;\">\n    <h2>Merhaba {{ $('Kullanıcı Doğrula').item.json.ad }}! 👋</h2>\n    <p>YKS hazırlık yolculuğuna başlamak için doğru yerdesin.</p>\n    <div style=\"background: #f0f0ff; padding: 20px; border-radius: 8px; margin: 20px 0;\">\n      <h3 style=\"color: #6366f1;\">15 Günlük Deneme Paketiniz:</h3>\n      <ul>\n        <li>✅ <strong>680 ücretsiz soru hakkı</strong></li>\n        <li>✅ TYT & AYT erişimi</li>\n        <li>✅ Temel performans analizi</li>\n        <li>✅ Yapay zeka destekli sorular</li>\n      </ul>\n    </div>\n    <div style=\"text-align: center; margin: 30px 0;\">\n      <a href=\"https://ykskafa.com/dashboard\" style=\"background: #6366f1; color: white; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;\">Hemen Başla →</a>\n    </div>\n    <hr>\n    <p style=\"color: #666; font-size: 14px;\">Sorularınız için: <a href=\"mailto:info@ykskafa.com\">info@ykskafa.com</a> | 0543 967 91 67</p>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-welcome-email",
+      "name": "Karşılama E-postası Gönder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Kayıt başarılı! E-posta adresinizi kontrol edin.\",\n  \"kullanici\": {\n    \"id\": \"{{ $('Supabase - Kullanıcı Oluştur').item.json[0].id }}\",\n    \"email\": \"{{ $('Kullanıcı Doğrula').item.json.email }}\",\n    \"ad\": \"{{ $('Kullanıcı Doğrula').item.json.ad }}\",\n    \"plan\": \"deneme\",\n    \"deneme_bitis\": \"{{ $('Kullanıcı Doğrula').item.json.deneme_bitis }}\",\n    \"kalan_soru_hakki\": 680\n  }\n}",
+        "options": { "responseCode": 201 }
+      },
+      "id": "success-response",
+      "name": "Başarılı Yanıt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.message }}\"\n}",
+        "options": { "responseCode": 400 }
+      },
+      "id": "error-response",
+      "name": "Hata Yanıtı",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 480]
+    }
+  ],
+  "connections": {
+    "Webhook - Kayıt": {
+      "main": [[{ "node": "Kullanıcı Doğrula", "type": "main", "index": 0 }]]
+    },
+    "Kullanıcı Doğrula": {
+      "main": [[{ "node": "Supabase - Kullanıcı Oluştur", "type": "main", "index": 0 }]]
+    },
+    "Supabase - Kullanıcı Oluştur": {
+      "main": [[{ "node": "Performans Tablosu Oluştur", "type": "main", "index": 0 }]]
+    },
+    "Performans Tablosu Oluştur": {
+      "main": [[{ "node": "Karşılama E-postası Gönder", "type": "main", "index": 0 }]]
+    },
+    "Karşılama E-postası Gönder": {
+      "main": [[{ "node": "Başarılı Yanıt", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "YKS KAFA - Kullanıcı kaydı, Supabase'e ekleme, performans tablosu oluşturma, karşılama e-postası.",
+    "envVars": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SMTP_HOST", "SMTP_USER", "SMTP_PASS"]
+  }
+}
