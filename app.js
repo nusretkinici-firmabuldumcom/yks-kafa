@@ -383,9 +383,8 @@ function finishMock(timeExpired = false) {
     return `<article class="mock-wrong-item"><span class="question-topic">${escapeHTML(item.subject.name)} · ${escapeHTML(item.sample.topic)}</span><h3>${escapeHTML(item.sample.prompt)}</h3><div class="mock-answer-review"><span class="wrong-answer">Senin cevabın: ${escapeHTML(selected)}</span><strong>Doğru cevap: ${escapeHTML(correctText)}</strong></div><p>${escapeHTML(item.sample.explanation)}</p><div class="mock-review-steps">${item.sample.steps.map(([title, detail], step) => `<div><b>${step + 1}</b><span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(detail)}</small></span></div>`).join('')}</div><button class="small-button" data-speak-one="${index}">Bu çözümü seslendir 🔊</button></article>`;
   }).join('') || '<div class="schedule-empty">Harika! Bu denemede yanlış veya boş cevabın yok.</div>';
   const reviewDialog = $('#mockReviewDialog');
-  try { if (!reviewDialog.open) reviewDialog.showModal(); }
-  catch { reviewDialog.classList.add('review-fallback'); reviewDialog.setAttribute('open', ''); }
-  if (!reviewDialog.open) { reviewDialog.classList.add('review-fallback'); reviewDialog.setAttribute('open', ''); }
+  reviewDialog.classList.add('review-fallback');
+  reviewDialog.setAttribute('open', '');
   if (reviewQueue.length && 'speechSynthesis' in window) setTimeout(() => speakReviewAt(0), 250);
 }
 
@@ -689,9 +688,8 @@ function openDailyReview() {
     return `<article class="mock-wrong-item"><span class="question-topic">${escapeHTML(item.subject.name)} · ${escapeHTML(item.sample.topic)}</span><h3>${escapeHTML(item.sample.prompt)}</h3><div class="mock-answer-review"><span class="wrong-answer">Senin cevabın: ${escapeHTML(selected)}</span><strong>Doğru cevap: ${escapeHTML(correctText)}</strong></div><p>${escapeHTML(item.sample.explanation)}</p><div class="mock-review-steps">${item.sample.steps.map(([title, detail], step) => `<div><b>${step + 1}</b><span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(detail)}</small></span></div>`).join('')}</div><button class="small-button" data-speak-one="${index}">Bu çözümü seslendir 🔊</button></article>`;
   }).join('') || '<div class="schedule-empty">Harika! Yanlış veya boş sorun yok.</div>';
   const reviewDialog = $('#mockReviewDialog');
-  try { if (!reviewDialog.open) reviewDialog.showModal(); }
-  catch { reviewDialog.classList.add('review-fallback'); reviewDialog.setAttribute('open', ''); }
-  if (!reviewDialog.open) { reviewDialog.classList.add('review-fallback'); reviewDialog.setAttribute('open', ''); }
+  reviewDialog.classList.add('review-fallback');
+  reviewDialog.setAttribute('open', '');
   if (reviewQueue.length && 'speechSynthesis' in window) setTimeout(() => speakReviewAt(0), 250);
   dailyReviewQueue = [];
   saveStore('yk-daily-review', dailyReviewQueue);
