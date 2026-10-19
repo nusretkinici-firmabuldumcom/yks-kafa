@@ -579,7 +579,7 @@ function answerQuestion(button) {
   $('#answerList').classList.add('hidden');
   $('#solutionText').textContent = (isCorrect ? 'Güzel! ' : 'Bu kez olmadı. ') + currentSample.explanation;
   $('.solution-steps').innerHTML = currentSample.steps.map(([title, detail], index) => `<div><b>${index + 1}</b><span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(detail)}</small></span></div>`).join('');
-  $('#solutionBox').classList.add('hidden');
+  $('#solutionBox').classList.remove('hidden');
   if (!isCorrect) dailyReviewQueue.push({ subject: activeSubject, sample: currentSample, answer: button.dataset.answer });
   const target = activeQuestionTarget;
   $('#questionProgress').style.width = `${questionNumber / target * 100}%`;
