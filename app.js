@@ -679,7 +679,12 @@ function answerQuestion(button) {
 }
 
 function openDailyReview() {
-  reviewQueue = dailyReviewQueue;
+  reviewQueue = (Array.isArray(dailyReviewQueue) ? dailyReviewQueue : []).filter(item =>
+    typeof item?.subject?.name === 'string' && typeof item.sample?.prompt === 'string' &&
+    typeof item.sample.topic === 'string' && Array.isArray(item.sample.options) &&
+    typeof item.sample.correct === 'string' && typeof item.sample.explanation === 'string' &&
+    Array.isArray(item.sample.steps) && item.sample.steps.every(step => Array.isArray(step) && typeof step[0] === 'string' && typeof step[1] === 'string')
+  );
   $('#mockReviewTitle').textContent = 'Günlük çalışma tamamlandı';
   $('#mockReviewSummary').textContent = `${reviewQueue.length} yanlış veya boş soru için çözümler`;
   $('#mockWrongList').innerHTML = reviewQueue.map((item, index) => {
