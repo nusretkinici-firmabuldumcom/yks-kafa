@@ -708,7 +708,13 @@ $('#nextQuestion').addEventListener('click', event => {
     saveStore('yk-daily', daily);
     renderMetrics();
   }
-  if (questionNumber >= activeQuestionTarget) { $('#questionDialog').close(); toast(`${activeSubject.name}: görev tamamlandı!`); activeCarryId = null; openDailyReview(); return; }
+  if (questionNumber >= activeQuestionTarget) {
+    $('#questionDialog').close();
+    toast(`${activeSubject.name}: görev tamamlandı!`);
+    activeCarryId = null;
+    setTimeout(openDailyReview, 120);
+    return;
+  }
   startQuestion(activeSubject.name, activeCarryId);
 });
 $('#editPlan').addEventListener('click', openPlanner);
