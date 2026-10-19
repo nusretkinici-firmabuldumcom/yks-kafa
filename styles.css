@@ -13,3 +13,5 @@
 @media(max-width:480px){.account-session{align-items:flex-start;flex-wrap:wrap}.account-session .outline-button{margin-left:43px}}
 
 .app-shell.auth-pending{visibility:hidden}.weak-topic-empty{padding:16px 0;color:#87918b;font-size:11px;line-height:1.55}.weak-topic-list{display:grid;gap:12px}.weak-topic-list .weak-topic-row{margin:0}
+
+.app-shell.auth-locked .sidebar,.app-shell.auth-locked .topbar,.app-shell.auth-locked .mobile-nav,.app-shell.auth-locked .payment-panel{display:none}.app-shell.auth-locked .main-content{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0 auto;padding:28px 24px;max-width:760px}.app-shell.auth-locked #page-account{width:100%}.app-shell.auth-locked .account-grid{grid-template-columns:minmax(0,1fr)}.app-shell.auth-locked .account-auth{padding:28px}.app-shell.auth-locked .page-view .welcome-row{margin-bottom:20px}@media(max-width:760px){.app-shell.auth-locked .main-content{padding:18px 14px}.app-shell.auth-locked .account-auth{padding:20px}}

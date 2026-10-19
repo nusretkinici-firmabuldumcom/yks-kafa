@@ -705,6 +705,7 @@ function setAccountSession(user) {
   currentAccountUser = user || null;
   authInitialized = true;
   $('#appShell').classList.remove('auth-pending');
+  $('#appShell').classList.toggle('auth-locked', !signedIn);
   $('#accountSession').classList.toggle('hidden', !signedIn);
   $('.auth-switch').classList.toggle('hidden', signedIn);
   $('#loginForm').classList.toggle('hidden', signedIn || !$('.auth-tab[data-auth-tab="login"]').classList.contains('active'));
