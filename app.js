@@ -55,6 +55,8 @@ let activeQuestionTarget = 5;
 let answeredThisSession = false;
 let questionNumber = 1;
 let questionStartedAt = 0;
+let currentAccountUser = null;
+let authInitialized = false;
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
@@ -220,6 +222,7 @@ function renderMetrics() {
       ? `Bugün ${done} soru çözüldü ve başarı oranı ${accuracy}. ${weakest.subject.name} dersindeki başarı oranı %${Math.round(weakest.correct / weakest.done * 100)}; bu derste konu tekrarı önerilir.`
       : 'Henüz soru çözümü kaydı yok. Öğrenci ilk sorularını çözdükçe günlük hedef, başarı oranı ve tekrar önerileri burada görünecek.';
   }
+  renderWeakTopics();
   $('#todayDate').textContent = formatDate();
   $('#crumbTitle').textContent = ({ today: 'Bugün', plan: 'Çalışma planım', goals: 'Hedeflerim', mocks: 'Hafta sonu denemesi', courses: 'Dersler', questions: 'Soru çöz', progress: 'İlerlemem', parent: 'Veli görünümü', account: 'Hesap ve ödeme' })[currentPage] || 'Bugün';
   renderTasks('taskList'); renderTasks('planTaskList'); renderSubjectProgress(); renderSchedule(); renderCarry(); renderCourses(); renderQuestionPicker(); renderTasks('questionTaskList'); renderGoalPanel(); renderMockSchedule();
@@ -407,8 +410,33 @@ function renderSubjectProgress() {
   }).join('');
 }
 
+function renderWeakTopics() {
+  const weakest = allSubjects()
+    .map(subject => ({ subject, ...subjectProgress(subject.name) }))
+    .filter(item => item.done > 0)
+    .sort((a, b) => (a.correct / a.done) - (b.correct / b.done))
+    .slice(0, 3);
+  const home = $('#weakTopicContent');
+  const list = $('#weakTopicList');
+  if (!weakest.length) {
+    if (home) home.innerHTML = 'Soru çözdükçe kişisel tekrar önerilerin burada görünür.';
+    if (list) list.innerHTML = '<div class="schedule-empty">Yeterli çalışma verisi oluştuğunda tekrar önerilerin burada listelenir.</div>';
+    return;
+  }
+  if (home) {
+    const item = weakest[0];
+    const accuracy = Math.round(item.correct / item.done * 100);
+    home.innerHTML = `<div class="topic-row"><span class="subject-badge ${item.subject.kind}">${item.subject.icon}</span><div><strong>${escapeHTML(item.subject.topic)}</strong><small>${escapeHTML(item.subject.name)} · ${item.done} soru çözüldü</small></div><span class="topic-score">%${accuracy}</span></div><div class="topic-progress"><i style="width:${accuracy}%"></i></div><button class="soft-button" data-subject="${escapeHTML(item.subject.name)}">Bu konuyu tekrar et <span>→</span></button>`;
+  }
+  if (list) list.innerHTML = weakest.map(item => {
+    const accuracy = Math.round(item.correct / item.done * 100);
+    return `<div class="weak-topic-row"><span class="subject-badge ${item.subject.kind}">${item.subject.icon}</span><div><strong>${escapeHTML(item.subject.topic)}</strong><small>${escapeHTML(item.subject.name)} · Son başarı %${accuracy}</small></div><span class="review-tag">Tekrar önerilir</span><button class="small-button" data-subject="${escapeHTML(item.subject.name)}">Çalış →</button></div>`;
+  }).join('');
+}
+
 let currentPage = 'today';
 function goToPage(page) {
+  if (authInitialized && !currentAccountUser && page !== 'account') page = 'account';
   currentPage = page;
   $$('.page-view').forEach(el => el.classList.toggle('hidden', el.id !== `page-${page}`));
   $$('[data-page]').forEach(el => el.classList.toggle('active', el.dataset.page === page));
@@ -674,11 +702,25 @@ $$('[data-auth-tab]').forEach(button => button.addEventListener('click', () => {
 
 function setAccountSession(user) {
   const signedIn = Boolean(user);
+  currentAccountUser = user || null;
+  authInitialized = true;
+  $('#appShell').classList.remove('auth-pending');
   $('#accountSession').classList.toggle('hidden', !signedIn);
   $('.auth-switch').classList.toggle('hidden', signedIn);
   $('#loginForm').classList.toggle('hidden', signedIn || !$('.auth-tab[data-auth-tab="login"]').classList.contains('active'));
   $('#registerForm').classList.toggle('hidden', signedIn || !$('.auth-tab[data-auth-tab="register"]').classList.contains('active'));
-  if (!signedIn) return;
+  if (!signedIn) {
+    $('#profileButton .avatar').textContent = '•';
+    $('#profileButton .profile-copy strong').textContent = 'Giriş yap';
+    $('#profileButton .profile-copy small').textContent = 'Hesap bilgilerini aç';
+    goToPage('account');
+    return;
+  }
+  $('#profileButton .avatar').textContent = [...user.name.trim()][0]?.toLocaleUpperCase('tr-TR') || 'Ö';
+  $('#profileButton .profile-copy strong').textContent = user.name;
+  $('#profileButton .profile-copy small').textContent = `${user.accountType === 'parent' ? 'Veli hesabı' : 'Öğrenci hesabı'} · 14 gün deneme`;
+  const welcome = $('#welcomeName');
+  if (welcome) welcome.textContent = user.name.split(/\s+/)[0];
   const expiry = new Date(user.trialEndsAt);
   $('#accountGreeting').textContent = `${user.name} · ${user.accountType === 'parent' ? 'Veli hesabı' : 'Öğrenci hesabı'}`;
   $('#trialStatus').textContent = user.trialActive
@@ -686,6 +728,7 @@ function setAccountSession(user) {
     : '14 günlük ücretsiz deneme süren doldu';
   $('#trialStatus').classList.toggle('trial-expired', !user.trialActive);
   $('#trialEndDate').textContent = `Deneme bitişi: ${new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }).format(expiry)}`;
+  if (currentPage === 'account') goToPage('today');
 }
 
 function showAuthNotice(message, isError = false) {
@@ -707,14 +750,14 @@ async function requestAuth(path, body) {
   return result;
 }
 
-requestAuth('/api/auth/session').then(result => setAccountSession(result.user)).catch(() => {});
+requestAuth('/api/auth/session').then(result => setAccountSession(result.user)).catch(() => setAccountSession(null));
 
 $('#loginForm').addEventListener('submit', event => {
   event.preventDefault();
   const submit = $('#loginForm button[type="submit"]');
   submit.disabled = true;
   requestAuth('/api/auth/login', { email: $('#loginEmail').value, password: $('#loginPassword').value })
-    .then(({ user }) => { setAccountSession(user); $('#loginForm').reset(); toast('Giriş başarılı.'); })
+    .then(({ user }) => { setAccountSession(user); $('#loginForm').reset(); if (!localStorage.getItem('yk-profile')) { seedOnboarding(); $('#onboardingDialog').showModal(); } toast('Giriş başarılı.'); })
     .catch(error => showAuthNotice(error.message, true))
     .finally(() => { submit.disabled = false; });
 });
@@ -730,6 +773,8 @@ $('#registerForm').addEventListener('submit', event => {
   }).then(({ user }) => {
     $('#registerForm').reset();
     setAccountSession(user);
+    seedOnboarding();
+    $('#onboardingDialog').showModal();
     toast('Hesabın oluşturuldu. 14 günlük ücretsiz denemen başladı.');
   }).catch(error => showAuthNotice(error.message, true))
     .finally(() => { submit.disabled = false; });
@@ -757,7 +802,7 @@ $('#paymentForm').addEventListener('submit', event => {
     : 'Ücretsiz plan seçildi. Hesap oluşturma servisi bağlı olmadığı için üyelik başlatılmadı.';
   notice.classList.remove('hidden');
 });
-$('#membershipPlan').value = '149';
+$('#membershipPlan').value = '0';
 $('#membershipPlan').dispatchEvent(new Event('change'));
 $('#parentOptIn').addEventListener('change', event => {
   $('#parentFields').classList.toggle('hidden', !event.target.checked);
@@ -786,11 +831,12 @@ function seedOnboarding() {
   $('#parentEmail').required = profile.parentOptIn;
   $('#parentEmail').value = profile.parentEmail || '';
 }
-$('#reviewTopic').addEventListener('click', () => startQuestion('Temel Matematik'));
-$('#reviewTopic2').addEventListener('click', () => startQuestion('Temel Matematik'));
 $('#parentReminders').addEventListener('click', () => toast('Hatırlatma saati ayarı sonraki sürümde açılacak.'));
 $('#unlinkParent').addEventListener('click', () => toast('Veli hesabı yönetimi kayıt ve güvenli doğrulama servisiyle bağlanacak.'));
-$('#profileButton').addEventListener('click', () => { seedOnboarding(); $('#onboardingDialog').showModal(); });
+$('#profileButton').addEventListener('click', () => {
+  if (!currentAccountUser) { goToPage('account'); return; }
+  seedOnboarding(); $('#onboardingDialog').showModal();
+});
 $('#onboardingDialog').addEventListener('close', () => { if (!profile.grade || !profile.field) { profile = { ...DEFAULTS }; } });
 document.addEventListener('click', event => {
   const carryButton = event.target.closest('[data-carry-id]');
@@ -858,7 +904,7 @@ $('#savePlan').addEventListener('click', event => {
   $('#plannerDialog').close(); renderMetrics(); toast('Günlük çalışma programın güncellendi.');
 });
 
-$('#profileButton .profile-copy small').textContent = `${profile.grade} · ${fieldName()}`;
+$('#profileButton .profile-copy small').textContent = 'Hesap bilgilerini aç';
 const goalFieldLabel = document.createElement('label');
 goalFieldLabel.textContent = 'Puan türü';
 const goalFieldSelect = document.createElement('select');
@@ -872,5 +918,3 @@ prepareDailyRecord();
 initMockSchedule();
 seedOnboarding();
 renderMetrics();
-// First-run personalization is shown as an optional setup; the demo profile is prefilled for exploration.
-if (!localStorage.getItem('yk-profile')) { $('#onboardingDialog').showModal(); }
