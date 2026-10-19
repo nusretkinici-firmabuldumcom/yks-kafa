@@ -634,7 +634,8 @@ function startQuestion(subjectName, carryId = null) {
   $$('#answerList button').forEach(button => button.addEventListener('click', () => answerQuestion(button)));
   $('#answerList').classList.remove('hidden');
   $('#solutionBox').classList.add('hidden');
-  $('#nextQuestion').classList.add('hidden');
+  $('#nextQuestion').classList.remove('hidden');
+  $('#nextQuestion').textContent = 'Boş bırak ve devam et →';
   $('#questionHint').classList.remove('hidden');
   $('#questionHint').textContent = 'Cevabını seç; önce kendi başına denemeni istiyorum.';
   $('#questionDialog').showModal();
@@ -651,6 +652,7 @@ function answerQuestion(button) {
   $('#questionHint').textContent = 'Yanıtın kaydedildi. Doğru cevap ve çözüm, oturum tamamlandığında yalnızca yanlış ve boş sorular için açılacak.';
   $('#solutionBox').classList.add('hidden');
   $('#nextQuestion').classList.remove('hidden');
+  $('#nextQuestion').textContent = 'Sonraki soru →';
   if (!isCorrect) {
     dailyReviewQueue.push({ subject: activeSubject, sample: currentSample, answer: button.dataset.answer });
     saveStore('yk-daily-review', dailyReviewQueue);
