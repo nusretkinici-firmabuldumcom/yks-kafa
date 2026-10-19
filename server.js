@@ -174,6 +174,7 @@ async function handleAuth(request, response, pathname) {
     }
   }
 
+  authAttempts.delete(rateLimitKey(request, email));
   const token = crypto.randomBytes(32).toString('base64url');
   database.sessions = database.sessions.filter(item => Date.parse(item.expiresAt) > Date.now());
   database.sessions.push({
