@@ -47,7 +47,7 @@ let mockExam = null;
 let mockTimerHandle = null;
 let reviewQueue = [];
 let reviewSpeechIndex = 0;
-let dailyReviewQueue = [];
+let dailyReviewQueue = readStore('yk-daily-review', []);
 let activeSubject = TYT_SUBJECTS[1];
 let currentSample = null;
 let activeCarryId = null;
@@ -101,8 +101,7 @@ function formatDate() { return new Intl.DateTimeFormat('tr-TR', { day: 'numeric'
 function escapeHTML(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 function questionKey(sample) { return sample.prompt.trim().toLocaleLowerCase('tr-TR').replace(/\s+/g, ' '); }
 function unseenSample(subject) {
-  const sample = sampleFor(subject);
-  return seenQuestionKeys.includes(questionKey(sample)) ? null : sample;
+  return questionBankFor(subject).find(sample => !seenQuestionKeys.includes(questionKey(sample))) || null;
 }
 function markQuestionSeen(sample) {
   const key = questionKey(sample);
@@ -116,6 +115,8 @@ function prepareDailyRecord() {
   const today = localDateKey();
   if (!daily) daily = { date: today, tasks: {}, carry: [], answered: 0, correct: 0, seconds: 0 };
   if (daily.date !== today) {
+    dailyReviewQueue = [];
+    saveStore('yk-daily-review', dailyReviewQueue);
     const carry = Array.isArray(daily.carry) ? [...daily.carry] : [];
     for (const [name, task] of Object.entries(daily.tasks || {})) {
       const subject = task.subject || allSubjects().find(item => item.name === name);
@@ -537,6 +538,24 @@ function sampleFor(subject) {
   };
 }
 
+function questionBankFor(subject) {
+  const first = sampleFor(subject);
+  const name = subject.name;
+  const make = (topic, prompt, options, correct, explanation, steps) => ({ topic, prompt, options, correct, explanation, steps });
+  const common = [
+    make(`KONU · ${subject.topic.toLocaleUpperCase('tr-TR')}`, `Bir öğrenci ${subject.topic.toLocaleLowerCase('tr-TR')} konusundaki bir soruyu çözerken önce soru kökünü, sonra verilenleri inceliyor. Bu sıranın temel amacı nedir?`, ['İşlem sayısını artırmak', 'İstenenle verilenleri doğru eşleştirmek', 'Seçenekleri görmezden gelmek', 'Konuyu değiştirmek', 'Soruyu ezberlemek'], 'B', 'Önce neyin verildiğini ve neyin istendiğini belirlemek, uygun bilgiyi ve çözüm yolunu seçmeyi sağlar.', [['Soru kökünü belirle', 'Sorunun istediği sonucu saptamak gerekir.'], ['Verilenleri ayır', 'İlgili bilgiler istenenle eşleştirilir.'], ['Yöntemi seç', 'Doğru çözüm yolu bu eşleştirmeyle bulunur.']]),
+    make(`KONU · ${subject.topic.toLocaleUpperCase('tr-TR')}`, `Bir kaynakta ${subject.topic.toLocaleLowerCase('tr-TR')} ile ilgili bilgi veriliyor. Bu bilgiyi yorumlarken en güvenilir başlangıç hangisidir?`, ['Yalnızca başlığa bakmak', 'Veri ve bağlamı birlikte değerlendirmek', 'İlk seçeneği işaretlemek', 'Ön bilgiyi kanıt saymak', 'Soru kökünü atlamak'], 'B', 'Bilgi, bağlamı ve dayanağıyla birlikte değerlendirilmelidir; yalnızca başlık veya ön kabul yeterli değildir.', [['Bilginin kapsamını oku', 'Kaynağın ne söylediğini belirle.'], ['Bağlamı kontrol et', 'Bilginin hangi koşullarda geçerli olduğuna bak.'], ['Kanıta dayalı yorumla', 'Veri ve bağlam birlikte değerlendirilir.']]),
+    make(`KONU · ${subject.topic.toLocaleUpperCase('tr-TR')}`, `Bir öğrenci ${subject.topic.toLocaleLowerCase('tr-TR')} sorusunda iki seçeneği birbirinden ayıramıyor. En etkili ilk adım hangisidir?`, ['Soru kökünü yeniden okuyup seçenekleri verilenlerle karşılaştırmak', 'Rastgele seçim yapmak', 'En uzun seçeneği işaretlemek', 'Soruyu boş bırakıp konuyu değiştirmek', 'Bütün seçenekleri doğru saymak'], 'A', 'Soru kökünü ve verilenleri seçeneklerle karşılaştırmak, seçenekler arasındaki belirleyici farkı buldurur.', [['İstenen bilgiyi bul', 'Soru kökünün neyi ölçtüğünü belirle.'], ['Seçenekleri karşılaştır', 'Her seçeneği verilen bilgiyle kontrol et.'], ['Ayırt edici farkı seç', 'Kanıtla uyuşan seçenek doğru olur.']]),
+    make(`KONU · ${subject.topic.toLocaleUpperCase('tr-TR')}`, `Bir sorunun çözümünü kontrol etmek isteyen öğrenci aşağıdakilerden hangisini yapmalıdır?`, ['Sonucu sorudaki koşullara geri uygulamak', 'Yalnızca işlem hızına bakmak', 'Çözüm basamaklarını silmek', 'Başka bir sorunun cevabını kullanmak', 'Soru kökünü değiştirmek'], 'A', 'Sonucu başlangıçtaki koşullarda yerine koymak veya yorumlamak, cevabın tutarlılığını denetler.', [['Sonucu geri taşı', 'Bulduğun cevabı verilen koşullarda değerlendir.'], ['Koşulları denetle', 'Sonucun tüm bilgilerle uyuşup uyuşmadığına bak.'], ['Tutarlılığı doğrula', 'Uyuşuyorsa çözüm kontrol edilmiştir.']]),
+  ];
+  if (name.includes('Matematik')) {
+    const vals = [[4, 7, 25], [5, 3, 22], [2, 9, 17], [6, 4, 31]];
+    const math = vals.map(([a,b,c]) => { const x=(c+b)/a; return make('KONU · TEMEL KAVRAMLAR', `Bir sayının ${a} katının ${b} fazlası ${c} ise bu sayı kaçtır?`, [String(x-2), String(x), String(x+1), String(x+2), String(x+3)], 'B', `x bilinmeyen sayı olsun. ${a}x + ${b} = ${c}; buradan x = ${x} bulunur.`, [['Denklemi kur', `${a}x + ${b} = ${c}`], ['Bilinmeyeni yalnız bırak', `${a}x = ${c-b}`], ['Sonucu bul', `x = ${x} ✓`]]); });
+    return [first, ...math];
+  }
+  return [first, ...common];
+}
+
 function startQuestion(subjectName, carryId = null) {
   activeCarryId = carryId;
   const carryTask = carryId ? daily.carry.find(task => task.id === carryId) : null;
@@ -547,7 +566,6 @@ function startQuestion(subjectName, carryId = null) {
   activeQuestionTarget = target;
   if (p.done >= target) { toast(`${activeSubject.name} günlük hedefine ulaştı.`); return; }
   questionNumber = p.done + 1;
-  if (questionNumber === 1) dailyReviewQueue = [];
   questionStartedAt = Date.now();
   answeredThisSession = false;
   $('#questionSubject').textContent = `${activeSubject.exam} · ${activeSubject.name.toLocaleUpperCase('tr-TR')}`;
@@ -563,6 +581,7 @@ function startQuestion(subjectName, carryId = null) {
   $$('#answerList button').forEach(button => button.addEventListener('click', () => answerQuestion(button)));
   $('#answerList').classList.remove('hidden');
   $('#solutionBox').classList.add('hidden');
+  $('#nextQuestion').classList.add('hidden');
   $('#questionHint').classList.remove('hidden');
   $('#questionHint').textContent = 'Cevabını seç; önce kendi başına denemeni istiyorum.';
   $('#questionDialog').showModal();
@@ -575,12 +594,14 @@ function answerQuestion(button) {
   const isCorrect = button.dataset.answer === correctKey;
   button.classList.add('selected');
   $$('.answer-list button').forEach(el => el.disabled = true);
-  $('#questionHint').classList.add('hidden');
-  $('#answerList').classList.add('hidden');
-  $('#solutionText').textContent = (isCorrect ? 'Güzel! ' : 'Bu kez olmadı. ') + currentSample.explanation;
-  $('.solution-steps').innerHTML = currentSample.steps.map(([title, detail], index) => `<div><b>${index + 1}</b><span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(detail)}</small></span></div>`).join('');
-  $('#solutionBox').classList.remove('hidden');
-  if (!isCorrect) dailyReviewQueue.push({ subject: activeSubject, sample: currentSample, answer: button.dataset.answer });
+  $('#questionHint').classList.remove('hidden');
+  $('#questionHint').textContent = 'Yanıtın kaydedildi. Doğru cevap ve çözüm, oturum tamamlandığında yalnızca yanlış ve boş sorular için açılacak.';
+  $('#solutionBox').classList.add('hidden');
+  $('#nextQuestion').classList.remove('hidden');
+  if (!isCorrect) {
+    dailyReviewQueue.push({ subject: activeSubject, sample: currentSample, answer: button.dataset.answer });
+    saveStore('yk-daily-review', dailyReviewQueue);
+  }
   const target = activeQuestionTarget;
   $('#questionProgress').style.width = `${questionNumber / target * 100}%`;
   let p = subjectProgress(activeSubject.name);
@@ -611,6 +632,8 @@ function openDailyReview() {
   }).join('') || '<div class="schedule-empty">Harika! Yanlış veya boş sorun yok.</div>';
   $('#mockReviewDialog').showModal();
   if (reviewQueue.length && 'speechSynthesis' in window) setTimeout(() => speakReviewAt(0), 250);
+  dailyReviewQueue = [];
+  saveStore('yk-daily-review', dailyReviewQueue);
 }
 
 $$('[data-page]').forEach(button => button.addEventListener('click', () => goToPage(button.dataset.page)));
@@ -624,6 +647,7 @@ $('#nextQuestion').addEventListener('click', event => {
   event.preventDefault();
   if (!answeredThisSession) {
     dailyReviewQueue.push({ subject: activeSubject, sample: currentSample, answer: null });
+    saveStore('yk-daily-review', dailyReviewQueue);
     const skippedTask = activeCarryId ? daily.carry.find(item => item.id === activeCarryId) : daily.tasks[activeSubject.name];
     if (skippedTask) skippedTask.done = Math.min(skippedTask.target, skippedTask.done + 1);
     saveStore('yk-daily', daily);
@@ -919,3 +943,4 @@ prepareDailyRecord();
 initMockSchedule();
 seedOnboarding();
 renderMetrics();
+
