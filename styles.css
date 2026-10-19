@@ -17,3 +17,5 @@
 .app-shell.auth-locked .sidebar,.app-shell.auth-locked .topbar,.app-shell.auth-locked .mobile-nav,.app-shell.auth-locked .payment-panel{display:none}.app-shell.auth-locked .main-content{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0 auto;padding:28px 24px;max-width:760px}.app-shell.auth-locked #page-account{width:100%}.app-shell.auth-locked .account-grid{grid-template-columns:minmax(0,1fr)}.app-shell.auth-locked .account-auth{padding:28px}.app-shell.auth-locked .page-view .welcome-row{margin-bottom:20px}@media(max-width:760px){.app-shell.auth-locked .main-content{padding:18px 14px}.app-shell.auth-locked .account-auth{padding:20px}}
 
 .app-shell.auth-locked~.mobile-nav{display:none}
+.mock-review-dialog.review-fallback{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1000;box-shadow:0 0 0 100vmax #12221cd9,0 25px 100px #10251f55}.mock-review-dialog.review-fallback::backdrop{background:transparent}@media(max-width:760px){.mock-review-dialog.review-fallback{left:0;top:0;transform:none;width:100vw;height:100dvh;max-height:100dvh;border-radius:0}}
+
