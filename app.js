@@ -669,14 +669,77 @@ $$('[data-auth-tab]').forEach(button => button.addEventListener('click', () => {
   $$('[data-auth-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
   $('#loginForm').classList.toggle('hidden', mode !== 'login');
   $('#registerForm').classList.toggle('hidden', mode !== 'register');
+  $('#authNotice').classList.add('hidden');
 }));
+
+function setAccountSession(user) {
+  const signedIn = Boolean(user);
+  $('#accountSession').classList.toggle('hidden', !signedIn);
+  $('.auth-switch').classList.toggle('hidden', signedIn);
+  $('#loginForm').classList.toggle('hidden', signedIn || !$('.auth-tab[data-auth-tab="login"]').classList.contains('active'));
+  $('#registerForm').classList.toggle('hidden', signedIn || !$('.auth-tab[data-auth-tab="register"]').classList.contains('active'));
+  if (!signedIn) return;
+  const expiry = new Date(user.trialEndsAt);
+  $('#accountGreeting').textContent = `${user.name} · ${user.accountType === 'parent' ? 'Veli hesabı' : 'Öğrenci hesabı'}`;
+  $('#trialStatus').textContent = user.trialActive
+    ? `Ücretsiz denemede · ${user.trialDaysRemaining} gün kaldı`
+    : '14 günlük ücretsiz deneme süren doldu';
+  $('#trialStatus').classList.toggle('trial-expired', !user.trialActive);
+  $('#trialEndDate').textContent = `Deneme bitişi: ${new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }).format(expiry)}`;
+}
+
+function showAuthNotice(message, isError = false) {
+  const notice = $('#authNotice');
+  notice.textContent = message;
+  notice.classList.toggle('error', isError);
+  notice.classList.remove('hidden');
+}
+
+async function requestAuth(path, body) {
+  const response = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    credentials: 'same-origin',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'İşlem tamamlanamadı.');
+  return result;
+}
+
+requestAuth('/api/auth/session').then(result => setAccountSession(result.user)).catch(() => {});
+
 $('#loginForm').addEventListener('submit', event => {
   event.preventDefault();
-  toast('Giriş ekranı hazır; gerçek hesap doğrulaması sunucu bağlantısı gerektiriyor.');
+  const submit = $('#loginForm button[type="submit"]');
+  submit.disabled = true;
+  requestAuth('/api/auth/login', { email: $('#loginEmail').value, password: $('#loginPassword').value })
+    .then(({ user }) => { setAccountSession(user); $('#loginForm').reset(); toast('Giriş başarılı.'); })
+    .catch(error => showAuthNotice(error.message, true))
+    .finally(() => { submit.disabled = false; });
 });
 $('#registerForm').addEventListener('submit', event => {
   event.preventDefault();
-  toast('Kayıt ekranı hazır; hesap oluşturma servisi henüz bağlı değil.');
+  const submit = $('#registerForm button[type="submit"]');
+  submit.disabled = true;
+  requestAuth('/api/auth/register', {
+    name: $('#registerName').value,
+    email: $('#registerForm input[type="email"]').value,
+    password: $('#registerForm input[type="password"]').value,
+    accountType: $('#accountType').value,
+  }).then(({ user }) => {
+    $('#registerForm').reset();
+    setAccountSession(user);
+    toast('Hesabın oluşturuldu. 14 günlük ücretsiz denemen başladı.');
+  }).catch(error => showAuthNotice(error.message, true))
+    .finally(() => { submit.disabled = false; });
+});
+$('#logoutButton').addEventListener('click', () => {
+  requestAuth('/api/auth/logout', {}).then(() => {
+    setAccountSession(null);
+    $('.auth-tab[data-auth-tab="login"]').click();
+    toast('Hesabından çıkış yaptın.');
+  }).catch(error => showAuthNotice(error.message, true));
 });
 $('#membershipPlan').addEventListener('change', event => {
   const amount = Number(event.target.value);
