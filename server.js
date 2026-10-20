@@ -13,6 +13,7 @@ const sessionDurationMs = 30 * 24 * 60 * 60 * 1000;
 let database = { users: [], sessions: [] };
 let writeQueue = Promise.resolve();
 const authAttempts = new Map();
+const solveAttempts = new Map();
 const allowedFiles = new Set([
   'index.html',
   'app.js',
@@ -80,6 +81,62 @@ async function readJson(request) {
   }
   try { return JSON.parse(body || '{}'); }
   catch { throw Object.assign(new Error('Geçersiz istek.'), { status: 400 }); }
+}
+
+async function readLargeJson(request, maxBytes = 9_000_000) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxBytes) throw Object.assign(new Error('Dosya en fazla 6 MB olabilir.'), { status: 413 });
+    chunks.push(chunk);
+  }
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); }
+  catch { throw Object.assign(new Error('Geçersiz istek.'), { status: 400 }); }
+}
+
+async function handleSolve(request, response) {
+  if (request.method !== 'POST') { json(response, 405, { error: 'Bu işlem için POST gerekli.' }); return; }
+  const token = cookieValue(request, 'ykskafa_session');
+  const session = database.sessions.find(item => item.tokenHash === (token && hashToken(token)) && Date.parse(item.expiresAt) > Date.now());
+  if (!session || !database.users.some(item => item.id === session.userId)) { json(response, 401, { error: 'Soru çözmek için hesabına giriş yap.' }); return; }
+  if (!process.env.OPENAI_API_KEY) { json(response, 503, { error: 'Öğretmenle soru çözümü henüz etkin değil. Sunucuya OPENAI_API_KEY tanımlanması gerekiyor.' }); return; }
+  const now = Date.now();
+  const attempts = (solveAttempts.get(session.userId) || []).filter(time => now - time < 60 * 60 * 1000);
+  if (attempts.length >= 30) { json(response, 429, { error: 'Saatlik soru çözme sınırına ulaştın. Bir saat sonra yeniden deneyebilirsin.' }); return; }
+  attempts.push(now); solveAttempts.set(session.userId, attempts);
+  const input = await readLargeJson(request);
+  const question = String(input.question || '').trim().slice(0, 6000);
+  const attachment = input.attachment;
+  if (!question && !attachment) { json(response, 400, { error: 'Soruyu yaz veya bir görsel/PDF ekle.' }); return; }
+  const content = [{ type: 'input_text', text: `Öğrencinin sorusu ve isteği:\n${question || 'Ekli dosyadaki soruyu oku ve çöz.'}` }];
+  if (attachment) {
+    const data = String(attachment.data || '');
+    const mime = String(attachment.mimeType || '').toLowerCase();
+    const acceptedFiles = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', 'application/msword', 'application/rtf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv', 'text/tab-separated-values', 'application/json'];
+    if (!/^data:[^;,]+;base64,[a-z0-9+/=\r\n]+$/i.test(data) || data.length > 8_500_000 || !acceptedFiles.includes(mime)) {
+      json(response, 400, { error: 'Desteklenmeyen dosya türü. Görsel, PDF, Word, PowerPoint, Excel veya metin dosyası seç; dosya en fazla 6 MB olabilir.' }); return;
+    }
+    const filename = String(attachment.name || 'soru.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+    if (mime.startsWith('image/')) content.push({ type: 'input_image', image_url: data, detail: 'high' });
+    else content.push({ type: 'input_file', filename, file_data: data, ...(mime === 'application/pdf' ? { detail: 'high' } : {}) });
+  }
+  const instructions = `Sen ykskafa uygulamasının sabırlı, akıcı ve teşvik edici YKS öğretmenisin. Türkçe konuş; öğrenciye sen diye hitap et. Önce görseldeki/sorudaki ifadeyi dikkatle oku. Okunmayan ya da eksik bilgi varsa varsayım yapmadan bunu belirt ve netleştirme iste. Sonucu kısa bir başlıkla açıkla; ardından verilenleri ve isteneni belirle, gereken kural/formülü anlat, her işlem basamağını ara sonuçlarıyla göster, doğru seçeneği veya sonucu ve kontrol yolunu belirt. Matematik ve diğer sayısal derslerde birimleri, işaretleri, dönüşümleri ve işlem kontrolünü atlama. Ezberlenmiş cevabı değil, öğrencinin aynı türden soruyu çözmesini sağlayacak yöntemi öğret. Yanlış öncül varsa nazikçe düzelt. Sesli anlatıma uygun doğal ve kısa cümleler kur; Markdown kullanabilirsin. Soruda şıklar varsa şıkları da dikkate al.`;
+  let apiResponse;
+  try {
+    apiResponse = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST', headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: process.env.OPENAI_MODEL || 'gpt-4.1-mini', instructions, input: [{ role: 'user', content }], max_output_tokens: 1400 }),
+      signal: AbortSignal.timeout(90_000),
+    });
+  } catch {
+    json(response, 502, { error: 'Öğretmen bağlantısı kurulamadı. Biraz sonra yeniden dene.' }); return;
+  }
+  const result = await apiResponse.json().catch(() => ({}));
+  if (!apiResponse.ok) { json(response, 502, { error: 'Soru şu anda çözülemedi. Biraz sonra yeniden dene.' }); return; }
+  const answer = result.output_text || (result.output || []).flatMap(item => item.content || []).filter(item => item.type === 'output_text').map(item => item.text).join('\n');
+  if (!answer) { json(response, 502, { error: 'Öğretmen yanıt üretemedi. Soruyu daha net bir görselle yeniden gönder.' }); return; }
+  json(response, 200, { answer });
 }
 
 function rateLimitKey(request, email) {
@@ -196,7 +253,7 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (pathname.startsWith('/api/')) {
-    try { await handleAuth(request, response, pathname); }
+    try { if (pathname === '/api/solve') await handleSolve(request, response); else await handleAuth(request, response, pathname); }
     catch (error) {
       if (!response.headersSent) json(response, error.status || 500, { error: error.status ? error.message : 'İşlem tamamlanamadı. Tekrar dene.' });
       else response.destroy();
@@ -245,3 +302,4 @@ start().catch(error => {
   console.error('YKS Kafa sunucusu başlatılamadı:', error);
   process.exit(1);
 });
+
