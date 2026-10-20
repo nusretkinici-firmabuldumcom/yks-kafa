@@ -318,7 +318,7 @@ function renderMockPicker(sessions) {
     const subjects = session.subjects;
     return `<div class="mock-picker-exam"><h3>${session.type} içeriği</h3><div class="mock-picker-grid">${subjects.map(subject => {
       const bank = questionBankFor(subject);
-      const sampleTopics = [...new Set(bank.map(sample => sample.topic))];
+      const sampleTopics = [...new Set(bank.map(sample => topicForMockSample(subject, sample)))];
       const topic = selected[subject.name]?.topic || sampleTopics[0];
       const active = selected[subject.name]?.active !== false;
       return `<label class="mock-picker-subject"><span><input type="checkbox" data-mock-subject="${escapeHTML(session.type)}|${escapeHTML(subject.name)}" ${active ? 'checked' : ''}><b>${escapeHTML(subject.name)}</b></span><select data-mock-topic="${escapeHTML(session.type)}|${escapeHTML(subject.name)}" ${active ? '' : 'disabled'}>${sampleTopics.map(value => `<option value="${escapeHTML(value)}" ${value === topic ? 'selected' : ''}>${escapeHTML(value.replace(/^KONU · /, ''))}</option>`).join('')}</select></label>`;
@@ -328,7 +328,7 @@ function renderMockPicker(sessions) {
     const [type, name] = input.dataset.mockSubject.split('|');
     const settings = mockSelection[type] ||= {};
     const subject = (sessions.find(session => session.type === type)?.subjects || []).find(item => item.name === name);
-    settings[name] ||= { topic: questionBankFor(subject)[0].topic };
+    settings[name] ||= { topic: topicForMockSample(subject, questionBankFor(subject)[0]) };
     settings[name].active = input.checked;
     saveStore('yk-mock-selection', mockSelection);
     renderMockSchedule();
@@ -343,11 +343,23 @@ function renderMockPicker(sessions) {
   }));
 }
 
+function topicForMockSample(subject, sample) {
+  const name = subject.name;
+  const prompt = sample.prompt.toLocaleLowerCase('tr-TR');
+  if (name.includes('Matematik')) return /fonksiyon|f\(x\)/i.test(prompt) ? 'Fonksiyonlar' : /denklem|katının|bilinmeyen/i.test(prompt) ? 'Denklemler ve eşitlikler' : subject.topic;
+  if (name.includes('Türkçe') || name.includes('Edebiyat')) return /bakış açısı|anlatım olanağı/i.test(prompt) ? 'Anlatım ve bakış açısı' : /betimleme|yağmur|görünüş/i.test(prompt) ? 'Anlatım biçimleri' : /ana düşünce|vurgulanan düşünce|paragraf/i.test(prompt) ? 'Paragrafta ana düşünce' : subject.topic;
+  if (name.includes('Fizik')) return /sürat|yol|zaman/i.test(prompt) ? 'Hareket ve sürat' : /kuvvet|ivme/i.test(prompt) ? 'Kuvvet ve hareket' : subject.topic;
+  if (name.includes('Kimya')) return /proton|nötron|elektron|atom numarası|kütle numarası/i.test(prompt) ? 'Atomun yapısı' : /periyodik/i.test(prompt) ? 'Periyodik sistem' : /çözün|karışım/i.test(prompt) ? 'Karışımlar ve çözeltiler' : subject.topic;
+  if (name.includes('Coğrafya')) return /ölçek|harita/i.test(prompt) ? 'Harita ve ölçek' : /izohips|eğim/i.test(prompt) ? 'İzohips ve yer şekilleri' : /yerel saat|boylam/i.test(prompt) ? 'Dünya’nın hareketleri ve saat' : subject.topic;
+  if (name.includes('Biyoloji')) return /protein sentezi|ribozom/i.test(prompt) ? 'Hücre organelleri' : /mitoz/i.test(prompt) ? 'Hücre bölünmeleri' : /fotosentez|klorofil/i.test(prompt) ? 'Fotosentez' : /endositoz|difüzyon|osmoz/i.test(prompt) ? 'Hücre zarından madde geçişi' : subject.topic;
+  return subject.topic;
+}
+
 function getMockQuestions(type) {
   const subjects = type === 'TYT' ? TYT_SUBJECTS : type === 'YDT' ? FIELD_SUBJECTS.dil : (FIELD_SUBJECTS[profile.field] || FIELD_SUBJECTS.say);
   return subjects.filter(subject => mockSelection[type]?.[subject.name]?.active !== false).map(subject => {
     const chosenTopic = mockSelection[type]?.[subject.name]?.topic;
-    const sample = questionBankFor(subject).find(item => (!chosenTopic || item.topic === chosenTopic) && !seenQuestionKeys.includes(questionKey(item))) || null;
+    const sample = questionBankFor(subject).find(item => (!chosenTopic || topicForMockSample(subject, item) === chosenTopic) && !seenQuestionKeys.includes(questionKey(item))) || null;
     return { subject, sample, answer: null };
   }).filter(item => item.sample);
 }
