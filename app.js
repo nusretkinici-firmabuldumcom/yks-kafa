@@ -42,6 +42,7 @@ let goals = readStore('yk-goals', []);
 let currentMockNets = readStore('yk-current-nets', { tyt: 0, ayt: 0 });
 let mockSchedule = readStore('yk-mock-schedule', null);
 let mockResults = readStore('yk-mock-results', []);
+let mockSelection = readStore('yk-mock-selection', {});
 let seenQuestionKeys = readStore('yk-seen-question-keys', []);
 let mockExam = null;
 let mockTimerHandle = null;
@@ -299,6 +300,7 @@ function renderMockSchedule() {
   const sessions = [{ type: 'TYT', title: 'TYT genel denemesi', date: saturdayValue, time: '10:15', subjects: TYT_SUBJECTS, duration: 165 }];
   if (profile.field === 'dil') sessions.push({ type: 'YDT', title: 'YDT İngilizce denemesi', date: sundayValue, time: '15:45', subjects: FIELD_SUBJECTS.dil, duration: 120 });
   else sessions.push({ type: 'AYT', title: 'AYT alan denemesi', date: sundayValue, time: '10:15', subjects: FIELD_SUBJECTS[profile.field] || FIELD_SUBJECTS.say, duration: 180 });
+  renderMockPicker(sessions);
   $('#mockSessionList').innerHTML = sessions.map(session => {
     const available = getMockQuestions(session.type).length;
     return `<article class="mock-session-card"><span class="mock-session-icon">${session.type}</span><div class="mock-session-main"><strong>${session.title}</strong><small>${dateLabel(session.date)} · ${session.time} · ${session.duration} dk</small><small>${available} yeni örnek soru · ${level.label} seviye</small></div><button class="primary-button" data-start-mock="${session.type}" ${available ? '' : 'disabled'}>${available ? 'Denemeyi başlat' : 'Yeni soru bekleniyor'} <span>→</span></button></article>`;
@@ -307,9 +309,47 @@ function renderMockSchedule() {
   history.innerHTML = mockResults.map(result => `<div class="mock-history-row"><span class="mock-history-type">${escapeHTML(result.type)}</span><div><strong>${escapeHTML(result.date)} · ${escapeHTML(result.difficulty)}</strong><small>${result.correct} doğru · ${result.wrong} yanlış · ${result.blank} boş</small></div><strong>${result.net} net</strong></div>`).join('') || '<div class="schedule-empty">Henüz tamamlanmış denemen yok.</div>';
 }
 
+function renderMockPicker(sessions) {
+  const root = $('#mockContentPicker');
+  if (!root) return;
+  const types = [...new Set(sessions.map(session => session.type))];
+  root.innerHTML = sessions.map(session => {
+    const selected = mockSelection[session.type] || {};
+    const subjects = session.subjects;
+    return `<div class="mock-picker-exam"><h3>${session.type} içeriği</h3><div class="mock-picker-grid">${subjects.map(subject => {
+      const bank = questionBankFor(subject);
+      const sampleTopics = [...new Set(bank.map(sample => sample.topic))];
+      const topic = selected[subject.name]?.topic || sampleTopics[0];
+      const active = selected[subject.name]?.active !== false;
+      return `<label class="mock-picker-subject"><span><input type="checkbox" data-mock-subject="${escapeHTML(session.type)}|${escapeHTML(subject.name)}" ${active ? 'checked' : ''}><b>${escapeHTML(subject.name)}</b></span><select data-mock-topic="${escapeHTML(session.type)}|${escapeHTML(subject.name)}" ${active ? '' : 'disabled'}>${sampleTopics.map(value => `<option value="${escapeHTML(value)}" ${value === topic ? 'selected' : ''}>${escapeHTML(value.replace(/^KONU · /, ''))}</option>`).join('')}</select></label>`;
+    }).join('')}</div></div>`;
+  }).join('');
+  root.querySelectorAll('[data-mock-subject]').forEach(input => input.addEventListener('change', () => {
+    const [type, name] = input.dataset.mockSubject.split('|');
+    const settings = mockSelection[type] ||= {};
+    const subject = (sessions.find(session => session.type === type)?.subjects || []).find(item => item.name === name);
+    settings[name] ||= { topic: questionBankFor(subject)[0].topic };
+    settings[name].active = input.checked;
+    saveStore('yk-mock-selection', mockSelection);
+    renderMockSchedule();
+  }));
+  root.querySelectorAll('[data-mock-topic]').forEach(select => select.addEventListener('change', () => {
+    const [type, name] = select.dataset.mockTopic.split('|');
+    const settings = mockSelection[type] ||= {};
+    settings[name] ||= { active: true };
+    settings[name].topic = select.value;
+    saveStore('yk-mock-selection', mockSelection);
+    renderMockSchedule();
+  }));
+}
+
 function getMockQuestions(type) {
   const subjects = type === 'TYT' ? TYT_SUBJECTS : type === 'YDT' ? FIELD_SUBJECTS.dil : (FIELD_SUBJECTS[profile.field] || FIELD_SUBJECTS.say);
-  return subjects.map(subject => ({ subject, sample: unseenSample(subject), answer: null })).filter(item => item.sample);
+  return subjects.filter(subject => mockSelection[type]?.[subject.name]?.active !== false).map(subject => {
+    const chosenTopic = mockSelection[type]?.[subject.name]?.topic;
+    const sample = questionBankFor(subject).find(item => (!chosenTopic || item.topic === chosenTopic) && !seenQuestionKeys.includes(questionKey(item))) || null;
+    return { subject, sample, answer: null };
+  }).filter(item => item.sample);
 }
 
 function startMock(type) {
@@ -395,7 +435,12 @@ function speakReviewAt(index) {
   const item = reviewQueue[index];
   const selected = item.answer ? `Senin seçimin ${item.answer}.` : 'Bu soruyu boş bırakmışsın.';
   const correct = item.sample.correct;
-  const text = `${item.subject.name}. ${item.sample.prompt}. ${selected} Doğru cevap ${correct}. ${item.sample.explanation} ${item.sample.steps.map((step, i) => `Adım ${i + 1}: ${step[0]}. ${step[1]}`).join('. ')}`;
+  const answerText = item.sample.options[correct.charCodeAt(0) - 65];
+  const intro = item.subject.name.includes('Matematik') || item.subject.name.includes('Fizik') || item.subject.name.includes('Kimya') || item.subject.name.includes('Coğrafya')
+    ? `Şimdi ${item.subject.name} sorusunu sakin sakin, adım adım çözelim. Önce soruda verilenleri ve bizden isteneni ayıralım. ${item.sample.prompt}. ${selected} Doğru cevap ${correct} seçeneği: ${answerText}.`
+    : `${item.subject.name} sorusunu birlikte inceleyelim. ${item.sample.prompt}. ${selected} Doğru cevap ${correct} seçeneği: ${answerText}.`;
+  const steps = item.sample.steps.map(([title, detail], i) => `İlk olarak${i ? `, adım ${i + 1} olarak` : ''}: ${title}. ${detail}`).join('. ');
+  const text = `${intro} ${item.sample.explanation} Çözüm adımları şöyle. ${steps}. Son olarak, bulduğumuz cevabı soru köküyle kontrol edelim. ${answerText}.`;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = item.subject.name.includes('İngilizce') ? 'en-US' : 'tr-TR';
   utterance.rate = 0.92;
@@ -544,20 +589,20 @@ function questionBankFor(subject) {
   const first = sampleFor(subject);
   const name = subject.name;
   const make = (topic, prompt, options, correct, explanation, steps) => ({ topic, prompt, options, correct, explanation, steps });
-  const q = (prompt, options, index, explanation) => make(`KONU · ${subject.topic.toLocaleUpperCase('tr-TR')}`, prompt, options, String.fromCharCode(65 + index), explanation, [['Soruda verileni belirle', 'Soru kökünde verilen bilgiyi ve isteneni ayır.'], ['İlgili bilgiyi kullan', explanation], ['Cevabı kontrol et', 'Sonucun soru köküyle uyuştuğunu doğrula.']]);
+  const q = (prompt, options, index, explanation, steps = null) => make(`KONU · ${subject.topic.toLocaleUpperCase('tr-TR')}`, prompt, options, String.fromCharCode(65 + index), explanation, steps || [['Soruda verileni belirle', 'Soru kökünde verilen bilgiyi ve isteneni ayır.'], ['İlgili bilgiyi kullan', explanation], ['Cevabı kontrol et', 'Sonucun soru köküyle uyuştuğunu doğrula.']]);
   const content = name.includes('Türkçe') ? [
     q('“Kentlerin belleği yalnızca eski yapılarda değil, sokak adlarında ve gündelik alışkanlıklarda da yaşar.” Bu cümlede vurgulanan düşünce hangisidir?', ['Kent yaşamı sürekli değişir.', 'Kentin geçmişi farklı kültürel izlerde korunur.', 'Eski yapılar korunmamalıdır.', 'Sokak adları rastgele belirlenir.', 'Gündelik alışkanlıklar önemsizdir.'], 1, 'Kent belleğinin yapılardan başka adlar ve alışkanlıklarla da taşındığı söyleniyor.'),
     q('Bir yazar, bir olayı farklı kişilerin bakış açısından anlatarak okura sunuyorsa hangi anlatım olanağını kullanır?', ['Tek yönlü anlatımı', 'Bakış açısı çeşitliliğini', 'Nesnel tanımlamayı', 'Özetlemeyi', 'Tanık göstermeyi'], 1, 'Farklı kişilerin bakış açıları aynı olayın farklı yönlerini görünür kılar.'),
     q('“Yağmur dindi; kaldırım taşlarında biriken ışık, sokağı olduğundan daha geniş gösteriyordu.” cümlesinde ağır basan anlatım biçimi hangisidir?', ['Tartışma', 'Açıklama', 'Betimleme', 'Öyküleme', 'Kanıtlama'], 2, 'Işık ve sokak görünüşü okuyucunun zihninde canlandırılıyor; betimleme ağır basıyor.'),
     q('Bir paragrafta düşüncenin gelişimini izlerken önce hangi ögeyi belirlemek en yararlıdır?', ['Örnek sayısını', 'Ana yargıyı ve onu destekleyen cümleleri', 'Yazarın yaşını', 'Paragrafın uzunluğunu', 'Kullanılan noktalama işaretlerinin sayısını'], 1, 'Ana yargı, destekleyici cümlelerin hangi düşünce etrafında kurulduğunu gösterir.'),
   ] : name.includes('Fizik') ? [
-    q('Sabit süratle 3 saatte 180 km giden aracın sürati kaç km/sa olur?', ['30', '45', '60', '90', '120'], 2, 'Sürat = yol / zaman = 180 / 3 = 60 km/sa.'),
+    q('Sabit süratle 3 saatte 180 km giden aracın sürati kaç km/sa olur?', ['30', '45', '60', '90', '120'], 2, 'Sürat = yol / zaman = 180 / 3 = 60 km/sa.', [['Verilenleri yaz', 'Alınan yol 180 kilometre, geçen süre 3 saattir.'], ['Bağıntıyı seç', 'Sürat, alınan yolun geçen zamana bölünmesiyle bulunur: v = x / t.'], ['Birimleri kontrol et', 'Kilometreyi saate böldüğümüz için sonuç birimi kilometre bölü saat olur.'], ['İşlemi yap ve doğrula', '180 / 3 = 60. Araç her saatte 60 kilometre gider; cevap 60 km/sa.']]),
     q('Bir cisme etki eden bileşke kuvvet sıfırsa cisim için hangisi kesinlikle doğrudur?', ['Kesinlikle durur.', 'Hızının büyüklüğü kesinlikle artar.', 'Dengelenmiş kuvvetlerin etkisindedir.', 'Hareket yönü kesinlikle değişir.', 'Üzerine hiç kuvvet etki etmez.'], 2, 'Bileşke kuvvetin sıfır olması kuvvetlerin dengelendiğini gösterir; cisim duruyor veya sabit hızla gidiyor olabilir.'),
-    q('Kütlesi 2 kg olan cisme 6 N bileşke kuvvet uygulanıyor. Cismin ivmesi kaç m/s² olur?', ['2', '3', '4', '8', '12'], 1, 'Newton’un ikinci yasası F = m·a olduğundan a = 6 / 2 = 3 m/s².'),
+    q('Kütlesi 2 kg olan cisme 6 N bileşke kuvvet uygulanıyor. Cismin ivmesi kaç m/s² olur?', ['2', '3', '4', '8', '12'], 1, 'Newton’un ikinci yasası F = m·a olduğundan a = 6 / 2 = 3 m/s².', [['Verilenleri belirle', 'Bileşke kuvvet 6 newton, kütle 2 kilogram. İstenen ivme.'], ['Fizik bağıntısını yaz', 'Newton’un ikinci yasası: F = m çarpı a.'], ['İvmeyi yalnız bırak', 'Her iki tarafı kütleye böleriz: a = F / m.'], ['Değerleri yerine koy', 'a = 6 / 2 = 3 metre bölü saniye kare.'], ['Sonucu yorumla', 'Her saniyede hız 3 metre bölü saniye değişir; cevap 3 m/s².']]),
     q('Aynı kuvvet uygulandığında kütlesi daha küçük olan cismin ivmesi nasıl değişir?', ['Azalır.', 'Artar.', 'Değişmez.', 'Sıfır olur.', 'Yönü kesin değişir.'], 1, 'a = F/m bağıntısına göre aynı kuvvette kütle azaldıkça ivme artar.'),
   ] : name.includes('Kimya') ? [
     q('Atom numarası 17 olan nötr klor atomunun elektron sayısı kaçtır?', ['8', '17', '18', '34', '35'], 1, 'Nötr atomda elektron sayısı proton sayısına, yani atom numarasına eşittir.'),
-    q('Bir atomun proton sayısı 11, nötron sayısı 12 ise kütle numarası kaçtır?', ['11', '12', '23', '24', '132'], 2, 'Kütle numarası proton ve nötron sayılarının toplamıdır: 11 + 12 = 23.'),
+    q('Bir atomun proton sayısı 11, nötron sayısı 12 ise kütle numarası kaçtır?', ['11', '12', '23', '24', '132'], 2, 'Kütle numarası proton ve nötron sayılarının toplamıdır: 11 + 12 = 23.', [['Tanımları ayır', 'Proton ve nötron çekirdekte bulunur. Elektronlar kütle numarasına katılmaz.'], ['Kuralı yaz', 'Kütle numarası = proton sayısı + nötron sayısı.'], ['Sayıları yerine koy', '11 proton + 12 nötron = 23.'], ['Cevabı kontrol et', 'Toplam nükleon sayısı 23 olduğundan cevap 23.']]),
     q('NaCl katısının suda çözünmesiyle oluşan karışım hangi türdür?', ['Heterojen karışım', 'Süspansiyon', 'Homojen çözelti', 'Saf element', 'Alaşım'], 2, 'Tuz suda iyonlarına ayrılarak her yere eşit dağılan homojen çözelti oluşturur.'),
     q('Periyodik tabloda aynı grupta bulunan elementlerin benzer kimyasal özellik göstermesinin temel nedeni nedir?', ['Nötron sayılarının eşit olması', 'Değerlik elektron düzenlerinin benzer olması', 'Kütle numaralarının eşit olması', 'Aynı periyotta bulunmaları', 'Proton sayılarının eşit olması'], 1, 'Aynı gruptaki elementlerin son katman elektron düzenleri benzer olduğu için kimyasal özellikleri de benzerlik gösterir.'),
   ] : name.includes('Biyoloji') ? [
@@ -566,7 +611,7 @@ function questionBankFor(subject) {
     q('Mitoz bölünme sonucunda oluşan hücrelerin kromozom sayısı ana hücreye göre nasıldır?', ['Yarıya iner.', 'İki katına çıkar.', 'Aynı kalır.', 'Önce artar sonra sıfırlanır.', 'Canlı türüne göre daima değişir.'], 2, 'Mitozda kromozom sayısı korunur ve genetik açıdan benzer iki hücre oluşur.'),
     q('Fotosentez sırasında ışık enerjisini soğurarak sürecin başlamasını sağlayan pigment hangisidir?', ['Hemoglobin', 'Melanin', 'Klorofil', 'Keratin', 'İnsülin'], 2, 'Klorofil, ışık enerjisini soğurarak fotosentezde kullanılmasını sağlar.'),
   ] : name.includes('Coğrafya') ? [
-    q('1/200.000 ölçekli haritada 3 cm gösterilen uzaklık gerçekte kaç kilometredir?', ['3', '6', '12', '20', '60'], 1, 'Haritada 1 cm gerçekte 200.000 cm = 2 km olduğundan 3 cm, 6 km’dir.'),
+    q('1/200.000 ölçekli haritada 3 cm gösterilen uzaklık gerçekte kaç kilometredir?', ['3', '6', '12', '20', '60'], 1, 'Haritada 1 cm gerçekte 200.000 cm = 2 km olduğundan 3 cm, 6 km’dir.', [['Ölçeği oku', 'Ölçek 1 bölü 200.000; haritadaki her 1 santimetre gerçekte 200.000 santimetreyi gösterir.'], ['Santimetreyi kilometreye çevir', '100.000 santimetre 1 kilometredir. 200.000 santimetre bu nedenle 2 kilometredir.'], ['Harita uzunluğunu uygula', 'Haritada 3 santimetre olduğuna göre gerçek uzaklık 3 çarpı 2 kilometredir.'], ['İşlemi bitir', '3 çarpı 2 = 6 kilometre. Cevap 6.']]),
     q('Bir izohips haritasında eğrilerin birbirine yaklaştığı yerde yeryüzü şekli genellikle nasıldır?', ['Eğim azdır.', 'Eğim fazladır.', 'Yükselti sıfırdır.', 'Akarsu yoktur.', 'Kıyı çizgisi vardır.'], 1, 'İzohipsler yakınsa kısa yatay mesafede büyük yükselti değişimi olur; eğim fazladır.'),
     q('Türkiye’de kıyı ile iç kesimler arasındaki ulaşımın dağlık alanlarda zorlaşmasının temel nedeni hangisidir?', ['Boylam farkının az olması', 'Dağların kıyıya paralel uzanması', 'Akarsuların kısa olması', 'Yıllık sıcaklık farkı', 'Bitki örtüsünün gür olması'], 1, 'Kuzey ve güney kıyılarında dağların kıyıya paralel uzanması kıyı-iç kesim ulaşımını zorlaştırır.'),
     q('Yerel saat farkının oluşmasının temel nedeni Dünya’nın hangi hareketidir?', ['Güneş çevresinde dolanması', 'Kendi ekseni çevresinde dönmesi', 'Eksen eğikliği', 'Yörüngesinin elips olması', 'Ay çevresinde dolanması'], 1, 'Dünya’nın batıdan doğuya dönmesi nedeniyle boylamlara göre yerel saat değişir.'),
