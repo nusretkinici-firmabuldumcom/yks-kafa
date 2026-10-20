@@ -448,14 +448,12 @@ function speakReviewAt(index) {
   const selected = item.answer ? `Senin seçimin ${item.answer}.` : 'Bu soruyu boş bırakmışsın.';
   const correct = item.sample.correct;
   const answerText = item.sample.options[correct.charCodeAt(0) - 65];
-  const intro = item.subject.name.includes('Matematik') || item.subject.name.includes('Fizik') || item.subject.name.includes('Kimya') || item.subject.name.includes('Coğrafya')
-    ? `Şimdi ${item.subject.name} sorusunu sakin sakin, adım adım çözelim. Önce soruda verilenleri ve bizden isteneni ayıralım. ${item.sample.prompt}. ${selected} Doğru cevap ${correct} seçeneği: ${answerText}.`
-    : `${item.subject.name} sorusunu birlikte inceleyelim. ${item.sample.prompt}. ${selected} Doğru cevap ${correct} seçeneği: ${answerText}.`;
+  const intro = `Öğretmenin olarak bu soruyu seninle birlikte çözeceğim. Acele etmeyelim; her adımın nedenini görelim. ${item.subject.name} sorusu şöyle: ${item.sample.prompt}. ${selected} Doğru cevap ${correct} seçeneği: ${answerText}.`;
   const steps = item.sample.steps.map(([title, detail], i) => `İlk olarak${i ? `, adım ${i + 1} olarak` : ''}: ${title}. ${detail}`).join('. ');
   const text = `${intro} ${item.sample.explanation} Çözüm adımları şöyle. ${steps}. Son olarak, bulduğumuz cevabı soru köküyle kontrol edelim. ${answerText}.`;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = item.subject.name.includes('İngilizce') ? 'en-US' : 'tr-TR';
-  utterance.rate = 0.92;
+  utterance.rate = 0.88;
   utterance.onend = () => { if (reviewSpeechIndex < reviewQueue.length - 1) speakReviewAt(reviewSpeechIndex + 1); };
   speechSynthesis.speak(utterance);
 }
@@ -494,6 +492,52 @@ function renderWeakTopics() {
   }).join('');
 }
 
+const boardHistory = new Map();
+function resizeBoard(id) {
+  const canvas = $(`#${id}`);
+  if (!canvas || !canvas.offsetWidth) return;
+  const ratio = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth, height = canvas.clientHeight;
+  if (canvas.width === Math.round(width * ratio) && canvas.height === Math.round(height * ratio)) return;
+  canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
+  const context = canvas.getContext('2d'); context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  context.fillStyle = '#fff'; context.fillRect(0, 0, width, height);
+  context.strokeStyle = '#20352a'; context.lineWidth = 2.4; context.lineCap = 'round'; context.lineJoin = 'round';
+}
+function clearBoard(id) {
+  const canvas = $(`#${id}`); if (!canvas) return;
+  resizeBoard(id);
+  const context = canvas.getContext('2d');
+  context.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight); context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  boardHistory.set(id, []);
+}
+function setupBoard(id) {
+  const canvas = $(`#${id}`); if (!canvas || canvas.dataset.ready) return;
+  canvas.dataset.ready = 'true'; boardHistory.set(id, []);
+  canvas.addEventListener('pointerdown', event => {
+    resizeBoard(id); canvas.setPointerCapture(event.pointerId);
+    const history = boardHistory.get(id) || [];
+    if (history.length >= 15) history.shift();
+    history.push(canvas.toDataURL('image/png')); boardHistory.set(id, history);
+    const rect = canvas.getBoundingClientRect(), ctx = canvas.getContext('2d');
+    ctx.beginPath(); ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top); canvas.dataset.drawing = 'true';
+  });
+  canvas.addEventListener('pointermove', event => {
+    if (canvas.dataset.drawing !== 'true') return;
+    const rect = canvas.getBoundingClientRect(), ctx = canvas.getContext('2d');
+    ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top); ctx.stroke();
+  });
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(type, () => { canvas.dataset.drawing = 'false'; });
+  requestAnimationFrame(() => resizeBoard(id));
+}
+function undoBoard(id) {
+  const canvas = $(`#${id}`), history = boardHistory.get(id) || [];
+  if (!canvas || !history.length) return;
+  const previous = history.pop(), image = new Image();
+  image.onload = () => { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight); ctx.drawImage(image, 0, 0, canvas.clientWidth, canvas.clientHeight); };
+  image.src = previous;
+}
+
 let currentPage = 'today';
 function goToPage(page) {
   if (authInitialized && !currentAccountUser && page !== 'account') page = 'account';
@@ -502,6 +546,7 @@ function goToPage(page) {
   $$('[data-page]').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   $('#crumbTitle').textContent = ({ today: 'Bugün', plan: 'Çalışma planım', goals: 'Hedeflerim', mocks: 'Hafta sonu denemesi', courses: 'Dersler', questions: 'Soru çöz', progress: 'İlerlemem', parent: 'Veli görünümü', account: 'Hesap ve ödeme' })[page];
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (page === 'questions') { setupBoard('outsideBoard'); requestAnimationFrame(() => resizeBoard('outsideBoard')); }
 }
 
 function toast(message) {
@@ -698,6 +743,7 @@ function startQuestion(subjectName, carryId = null) {
   $('#questionHint').classList.remove('hidden');
   $('#questionHint').textContent = 'Cevabını seç; önce kendi başına denemeni istiyorum.';
   $('#questionDialog').showModal();
+  setupBoard('solutionBoard'); requestAnimationFrame(() => { resizeBoard('solutionBoard'); clearBoard('solutionBoard'); });
 }
 
 function answerQuestion(button) {
@@ -786,6 +832,65 @@ $('#nextQuestion').addEventListener('click', event => {
 $('#editPlan').addEventListener('click', openPlanner);
 $('#planSettings').addEventListener('click', openPlanner);
 $('#openPickedQuestion').addEventListener('click', () => startQuestion($('#questionPicker').value));
+
+let questionAttachment = null;
+function readFileData(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Dosya okunamadı.'));
+    reader.readAsDataURL(file);
+  });
+}
+async function prepareAttachment(file) {
+  if (/^text\//.test(file.type) || /\.(txt|md)$/i.test(file.name)) {
+    $('#outsideQuestionText').value = await file.text(); $('#outsideQuestionStatus').textContent = 'Metin soruya eklendi. Öğretmene gönderebilirsin.'; return;
+  }
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/msword', 'application/rtf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv', 'text/tab-separated-values', 'application/json'];
+  if (!allowedTypes.includes(file.type)) { toast('Görsel, PDF, Word, PowerPoint, Excel veya metin dosyası seç.'); return; }
+  if (file.size > 6 * 1024 * 1024) { toast('Dosya en fazla 6 MB olabilir.'); return; }
+  let data = await readFileData(file), mimeType = file.type;
+  if (file.type.startsWith('image/') && file.type !== 'image/gif') {
+    const image = new Image(); image.src = data; await image.decode();
+    const scale = Math.min(1, 1800 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas'); canvas.width = Math.round(image.naturalWidth * scale); canvas.height = Math.round(image.naturalHeight * scale);
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height); data = canvas.toDataURL('image/jpeg', .82); mimeType = 'image/jpeg';
+  }
+  questionAttachment = { name: file.name, mimeType, data };
+  $('#questionAttachmentName').textContent = file.name; $('#questionAttachmentPreview').classList.remove('hidden');
+  $('#outsideQuestionStatus').textContent = 'Dosya hazır. Öğretmene gönderdiğinde soru açıklama için işlenecek.';
+}
+for (const input of [$('#questionCamera'), $('#questionFile')]) input.addEventListener('change', async () => {
+  const file = input.files?.[0]; if (!file) return;
+  try { await prepareAttachment(file); } catch { toast('Dosya açılamadı. Başka bir dosya dene.'); }
+  input.value = '';
+});
+$('#removeQuestionAttachment').addEventListener('click', () => { questionAttachment = null; $('#questionAttachmentPreview').classList.add('hidden'); $('#outsideQuestionStatus').textContent = 'Dosya kaldırıldı.'; });
+$('#solveOutsideQuestion').addEventListener('click', async () => {
+  const question = $('#outsideQuestionText').value.trim();
+  if (!question && !questionAttachment) { toast('Soruyu yaz veya bir fotoğraf/PDF ekle.'); return; }
+  if (!currentAccountUser) { toast('Öğretmene soru göndermek için hesabına giriş yap.'); goToPage('account'); return; }
+  const button = $('#solveOutsideQuestion'), status = $('#outsideQuestionStatus');
+  button.disabled = true; status.textContent = 'Öğretmenin soruyu inceliyor…'; $('#teacherAnswer').classList.add('hidden');
+  try {
+    const response = await fetch('/api/solve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, attachment: questionAttachment }) });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Soru çözülemedi.');
+    $('#teacherAnswerText').innerHTML = escapeHTML(payload.answer).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^###?\s+(.*)$/gm, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    $('#teacherAnswer').classList.remove('hidden'); status.textContent = 'Çözüm hazır. İstersen sesli dinle, sonra tahtada kendi çözümünü dene.';
+    requestAnimationFrame(() => resizeBoard('outsideBoard'));
+  } catch (error) { status.textContent = error.message || 'Bağlantı kurulamadı. Yeniden deneyebilirsin.'; }
+  finally { button.disabled = false; }
+});
+$('#speakTeacherAnswer').addEventListener('click', () => {
+  if (!('speechSynthesis' in window)) { toast('Bu tarayıcı sesli anlatımı desteklemiyor.'); return; }
+  speechSynthesis.cancel();
+  const text = $('#teacherAnswerText').innerText.replace(/[*#]/g, '').replace(/([=+*/])/g, ' $1 ');
+  const utterance = new SpeechSynthesisUtterance(`Öğretmenin olarak çözümü birlikte inceleyelim. ${text}`); utterance.lang = 'tr-TR'; utterance.rate = .86; speechSynthesis.speak(utterance);
+});
+$('#stopTeacherAnswer').addEventListener('click', () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); });
+document.addEventListener('click', event => {
+  const clear = event.target.closest('[data-board-clear]'); if (clear) clearBoard(clear.dataset.boardClear);
+  const undo = event.target.closest('[data-board-undo]'); if (undo) undoBoard(undo.dataset.boardUndo);
+});
 $('#goalForm').addEventListener('submit', event => {
   event.preventDefault();
   const tyt = Number($('#goalTyt').value), ayt = Number($('#goalAyt').value);
