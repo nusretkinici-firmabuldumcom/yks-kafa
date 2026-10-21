@@ -48,6 +48,7 @@ let mockExam = null;
 let mockTimerHandle = null;
 let reviewQueue = [];
 let reviewSpeechIndex = 0;
+let teacherSpeechToken = 0;
 let dailyReviewQueue = readStore('yk-daily-review', []);
 let activeSubject = TYT_SUBJECTS[1];
 let currentSample = null;
@@ -442,20 +443,60 @@ function finishMock(timeExpired = false) {
 
 function speakReviewAt(index) {
   if (!('speechSynthesis' in window) || !reviewQueue[index]) return;
-  speechSynthesis.cancel();
   reviewSpeechIndex = index;
   const item = reviewQueue[index];
-  const selected = item.answer ? `Senin seçimin ${item.answer}.` : 'Bu soruyu boş bırakmışsın.';
+  const selected = item.answer ? `Sen ${item.answer} seçeneğini işaretlemişsin.` : 'Bu soruyu boş bırakmışsın; hiç sorun değil, şimdi beraber öğrenelim.';
   const correct = item.sample.correct;
   const answerText = item.sample.options[correct.charCodeAt(0) - 65];
-  const intro = `Öğretmenin olarak bu soruyu seninle birlikte çözeceğim. Acele etmeyelim; her adımın nedenini görelim. ${item.subject.name} sorusu şöyle: ${item.sample.prompt}. ${selected} Doğru cevap ${correct} seçeneği: ${answerText}.`;
-  const steps = item.sample.steps.map(([title, detail], i) => `İlk olarak${i ? `, adım ${i + 1} olarak` : ''}: ${title}. ${detail}`).join('. ');
-  const text = `${intro} ${item.sample.explanation} Çözüm adımları şöyle. ${steps}. Son olarak, bulduğumuz cevabı soru köküyle kontrol edelim. ${answerText}.`;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = item.subject.name.includes('İngilizce') ? 'en-US' : 'tr-TR';
-  utterance.rate = 0.88;
-  utterance.onend = () => { if (reviewSpeechIndex < reviewQueue.length - 1) speakReviewAt(reviewSpeechIndex + 1); };
-  speechSynthesis.speak(utterance);
+  const chunks = [
+    `Hadi ${item.subject.name} sorusuna birlikte bakalım. Acele etmiyoruz; önce sorunun bizden ne istediğini bulacağız.`,
+    `Soru şöyle: ${item.sample.prompt}`,
+    selected,
+    `Doğru cevap ${correct} seçeneği: ${answerText}. Güzel, şimdi nedenini adım adım görelim.`,
+    item.sample.explanation.replace(/Doğru cevap [A-E].*/i, ''),
+    ...item.sample.steps.map(([title, detail], i) => `${i === 0 ? 'İlk adım' : `Sonraki adım, ${i + 1}`}. ${title}. ${detail}`),
+    `Şimdi sonucu soru kökünde yerine koyalım. Cevap ${answerText}. Buradaki püf nokta, verilenleri doğru bağıntıyla eşleştirmek. Böyle sorularda önce bu yolu dene; yapabilirsin!`,
+  ];
+  speakTeacherSequence(chunks, () => { if (reviewSpeechIndex === index && index < reviewQueue.length - 1) speakReviewAt(index + 1); });
+}
+
+function spokenMath(text) {
+  return String(text)
+    .replace(/(\d)\s*x\b/gi, '$1 çarpı iks')
+    .replace(/\b([xX])\b/g, 'iks')
+    .replace(/=/g, ' eşittir ')
+    .replace(/\+/g, ' artı ')
+    .replace(/[−–]/g, ' eksi ')
+    .replace(/\s-\s(?=\d)/g, ' eksi ')
+    .replace(/[×·]/g, ' çarpı ')
+    .replace(/÷|\//g, ' bölü ')
+    .replace(/²|\^2/g, ' kare')
+    .replace(/³|\^3/g, ' küp')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function stopTeacherSpeech() {
+  teacherSpeechToken += 1;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+function speakTeacherSequence(chunks, onComplete) {
+  stopTeacherSpeech();
+  const token = teacherSpeechToken;
+  const cleanChunks = chunks.map(spokenMath).filter(Boolean);
+  let index = 0;
+  const speakNext = () => {
+    if (token !== teacherSpeechToken) return;
+    if (index >= cleanChunks.length) { onComplete?.(); return; }
+    const utterance = new SpeechSynthesisUtterance(cleanChunks[index++]);
+    utterance.lang = 'tr-TR'; utterance.rate = 0.9; utterance.pitch = 1.08; utterance.volume = 1;
+    utterance.voice = speechSynthesis.getVoices().find(voice => voice.lang.toLocaleLowerCase().startsWith('tr')) || null;
+    utterance.onend = () => setTimeout(speakNext, 170);
+    utterance.onerror = () => setTimeout(speakNext, 170);
+    speechSynthesis.speak(utterance);
+  };
+  speakNext();
 }
 
 function renderSubjectProgress() {
@@ -882,11 +923,10 @@ $('#solveOutsideQuestion').addEventListener('click', async () => {
 });
 $('#speakTeacherAnswer').addEventListener('click', () => {
   if (!('speechSynthesis' in window)) { toast('Bu tarayıcı sesli anlatımı desteklemiyor.'); return; }
-  speechSynthesis.cancel();
-  const text = $('#teacherAnswerText').innerText.replace(/[*#]/g, '').replace(/([=+*/])/g, ' $1 ');
-  const utterance = new SpeechSynthesisUtterance(`Öğretmenin olarak çözümü birlikte inceleyelim. ${text}`); utterance.lang = 'tr-TR'; utterance.rate = .86; speechSynthesis.speak(utterance);
+  const paragraphs = $('#teacherAnswerText').innerText.split(/\n+/).filter(Boolean);
+  speakTeacherSequence(['Hadi soruyu beraber çözelim. Önce verilenleri bulalım, sonra işlemi adım adım yapalım.', ...paragraphs, 'Güzel ilerledin. Sonucu bir kez daha kontrol edelim.']);
 });
-$('#stopTeacherAnswer').addEventListener('click', () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); });
+$('#stopTeacherAnswer').addEventListener('click', stopTeacherSpeech);
 document.addEventListener('click', event => {
   const clear = event.target.closest('[data-board-clear]'); if (clear) clearBoard(clear.dataset.boardClear);
   const undo = event.target.closest('[data-board-undo]'); if (undo) undoBoard(undo.dataset.boardUndo);
@@ -940,14 +980,14 @@ $('#mockExamDialog').addEventListener('close', () => { clearInterval(mockTimerHa
 $('#mockExamDialog').addEventListener('cancel', event => {
   if (!window.confirm('Sınavı kapatıp yanıtlarını kaybetmek istiyor musun?')) event.preventDefault();
 });
-$('#closeMockReview').addEventListener('click', () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); $('#mockReviewDialog').close(); });
-$('#mockReviewDialog').addEventListener('close', () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); });
+$('#closeMockReview').addEventListener('click', () => { stopTeacherSpeech(); $('#mockReviewDialog').close(); });
+$('#mockReviewDialog').addEventListener('close', stopTeacherSpeech);
 $('#speakWrongAnswers').addEventListener('click', () => {
   if (!reviewQueue.length) { toast('Seslendirilecek yanlış veya boş cevap yok.'); return; }
   if (!('speechSynthesis' in window)) { toast('Bu tarayıcı sesli anlatımı desteklemiyor.'); return; }
   speakReviewAt(0);
 });
-$('#stopWrongAnswers').addEventListener('click', () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); });
+$('#stopWrongAnswers').addEventListener('click', stopTeacherSpeech);
 $$('[data-auth-tab]').forEach(button => button.addEventListener('click', () => {
   const mode = button.dataset.authTab;
   $$('[data-auth-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
